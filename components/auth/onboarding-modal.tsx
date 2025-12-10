@@ -159,8 +159,8 @@ export function OnboardingModal() {
                 </button>
 
                 <div className="p-8 text-center">
-                    <div className="w-16 h-16 mx-auto bg-emerald-500/10 rounded-full flex items-center justify-center mb-6">
-                        <Rocket className="w-8 h-8 text-emerald-400" />
+                    <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                        <img src="/nebula-logo.png" alt="Nebula PDF" className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]" />
                     </div>
 
                     <h2 className="text-2xl font-bold text-white mb-2">Welcome to the Fleet</h2>
