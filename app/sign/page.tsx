@@ -111,12 +111,20 @@ export default function SignPage() {
     };
 
     const handleSave = async () => {
-        if (!file || !signatureImage || !pdfDimensions) return;
+        if (!file || !signatureImage || !pdfDimensions || !containerRef.current) return;
 
-        // Calculate actual PDF coordinates
-        // PDF coords are bottom-left origin. Browser is top-left.
-        // We need original page dimensions to calculate scale factor
+        // Calculate actual position from DOM element
+        const signatureEl = document.getElementById("signature-element");
+        if (!signatureEl) return;
 
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const signatureRect = signatureEl.getBoundingClientRect();
+
+        // Calculate relative position (0,0 is top-left of container)
+        const relativeX = signatureRect.left - containerRect.left;
+        const relativeY = signatureRect.top - containerRect.top;
+
+        // PDF coordinate calculation
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
         const buffer = await file.arrayBuffer();
@@ -127,15 +135,12 @@ export default function SignPage() {
         const scaleX = originalViewport.width / pdfDimensions.width;
         const scaleY = originalViewport.height / pdfDimensions.height;
 
-        // Rendered Signature Dimensions (fixed at w-48 ~ 192px visually, but let's measure actual rendered size)
-        // For simple MVP we assume a reasonable fixed ratio or allow resizing
-        // Let's assume the signature is displayed at 200px width
-        const displayedSignatureWidth = 200;
-        const displayedSignatureHeight = 100; // Aspect ratio might vary, but fixing for calculation simplicity
+        const displayedSignatureWidth = signatureRect.width;
+        const displayedSignatureHeight = signatureRect.height;
 
-        const pdfX = signaturePosition.x * scaleX;
-        // Flip Y axis
-        const pdfY = (pdfDimensions.height - signaturePosition.y - displayedSignatureHeight) * scaleY;
+        const pdfX = relativeX * scaleX;
+        // Flip Y axis: PDF (0,0) is bottom-left.
+        const pdfY = (pdfDimensions.height - relativeY - displayedSignatureHeight) * scaleY;
 
         const pdfWidth = displayedSignatureWidth * scaleX;
         const pdfHeight = displayedSignatureHeight * scaleY;
@@ -240,23 +245,19 @@ export default function SignPage() {
                                 drag
                                 dragMomentum={false}
                                 dragConstraints={containerRef}
-                                onDragEnd={(_, info) => {
-                                    setSignaturePosition(prev => ({
-                                        x: prev.x + info.offset.x,
-                                        y: prev.y + info.offset.y
-                                    }));
+                                onDragEnd={() => {
+                                    // We don't update state here to avoid re-render conflicts with framer's transform
+                                    // Position will be calculated via DOM inspection on save
                                 }}
-                                // Initial position is handled by state logic relative to container, 
-                                // but for Framer Motion 'drag', it tracks delta. 
-                                // To keep it simple, we'll just position absolute and rely on visual placement.
+                                className="absolute z-10 cursor-move group border-2 border-transparent hover:border-primary/50 rounded-lg"
                                 style={{
-                                    position: 'absolute',
-                                    left: signaturePosition.x,
-                                    top: signaturePosition.y,
                                     width: 200,
-                                    height: 100
+                                    height: 100,
+                                    // Initial center position
+                                    left: signaturePosition.x,
+                                    top: signaturePosition.y
                                 }}
-                                className="z-10 cursor-move group border-2 border-transparent hover:border-primary/50 rounded-lg"
+                                id="signature-element" // ID for easy retrieval
                             >
                                 <img
                                     src={signatureImage}

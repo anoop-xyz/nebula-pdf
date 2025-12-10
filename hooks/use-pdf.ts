@@ -429,17 +429,26 @@ export function usePDF() {
             setIsProcessing(true);
             setError(null);
 
-            const fileBuffer = await readFileAsArrayBuffer(file);
-            // Attempt to load with password. If it fails, pdf-lib throws error.
-            const pdfDoc = await PDFDocument.load(fileBuffer, { password });
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('password', password);
 
-            // Saving automatically removes encryption unless specifically re-encrypted
-            const pdfBytes = await pdfDoc.save();
-            const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
+            const response = await fetch('/api/decrypt-pdf', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `Server Error: ${response.status}`);
+            }
+
+            const blob = await response.blob();
             downloadBlob(blob, `unlocked_${file.name}`);
-        } catch (err) {
-            console.error(err);
-            setError("Failed to unlock PDF. Incorrect password?");
+        } catch (err: any) {
+            console.error("Unlock Error:", err);
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+            setError(errorMessage);
         } finally {
             setIsProcessing(false);
         }
