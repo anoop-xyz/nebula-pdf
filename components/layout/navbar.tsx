@@ -57,7 +57,12 @@ export function Navbar() {
                             <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-600 group-hover:scale-105 transition-transform duration-300">
                                 <Rocket className="w-5 h-5 text-white" />
                             </div>
-                            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 font-serif tracking-tight">
+                            <span
+                                className={cn(
+                                    "text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 font-serif tracking-tight transition-all duration-300",
+                                    pathname === "/" && !isScrolled ? "opacity-0 -translate-x-4 pointer-events-none" : "opacity-100 translate-x-0"
+                                )}
+                            >
                                 Nebula PDF
                             </span>
                         </Link>

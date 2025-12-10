@@ -59,7 +59,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             await signInWithPopup(auth, provider);
             onClose();
         } catch (err: any) {
-            console.error(err);
+            console.error("Google Sign-In Error:", err.code, err.message);
             setError("Google Sign-In failed. Please try again.");
         } finally {
             setIsLoading(false);
