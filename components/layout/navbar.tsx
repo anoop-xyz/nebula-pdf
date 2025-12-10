@@ -54,8 +54,8 @@ export function Navbar() {
                     <div className="flex items-center justify-between h-16">
                         {/* Logo */}
                         <Link href="/" className="flex items-center space-x-2 group">
-                            <div className="relative flex items-center justify-center w-8 h-8 rounded-lg group-hover:scale-105 transition-transform duration-300">
-                                <img src="/nebula-logo.png" alt="Nebula PDF" className="w-8 h-8 object-contain" />
+                            <div className="relative flex items-center justify-center w-12 h-12 rounded-lg group-hover:scale-105 transition-transform duration-300">
+                                <img src="/nebula-logo.png" alt="Nebula PDF" className="w-full h-full object-contain" />
                             </div>
                             <span
                                 className={cn(
