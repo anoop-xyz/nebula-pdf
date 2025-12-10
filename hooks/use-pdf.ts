@@ -70,6 +70,123 @@ export function usePDF() {
         }
     };
 
+    const pdfToImages = async (file: File, outputName = "images.zip") => {
+        try {
+            setIsProcessing(true);
+            setError(null);
+
+            const JSZip = (await import("jszip")).default;
+            const zip = new JSZip();
+
+            const pdfjsLib = await import("pdfjs-dist");
+            pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
+            const buffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(buffer).promise;
+            const numPages = pdf.numPages;
+
+            for (let i = 1; i <= numPages; i++) {
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 2.0 }); // High quality scale
+                const canvas = document.createElement("canvas");
+                const context = canvas.getContext("2d");
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                if (context) {
+                    await page.render({ canvasContext: context, viewport } as any).promise;
+                    const blob = await new Promise<Blob | null>(resolve =>
+                        canvas.toBlob(resolve, "image/jpeg", 0.9)
+                    );
+
+                    if (blob) {
+                        zip.file(`page-${i}.jpg`, blob);
+                    }
+                }
+            }
+
+            const content = await zip.generateAsync({ type: "blob" });
+            downloadBlob(content, outputName);
+        } catch (err) {
+            console.error(err);
+            setError("Failed to convert PDF to images.");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const pdfToText = async (file: File) => {
+        try {
+            setIsProcessing(true);
+            setError(null);
+
+            const pdfjsLib = await import("pdfjs-dist");
+            pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
+            const buffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(buffer).promise;
+            const numPages = pdf.numPages;
+            let fullText = "";
+
+            for (let i = 1; i <= numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items
+                    .map((item: any) => item.str)
+                    .join(" ");
+
+                fullText += `--- Page ${i} ---\n\n${pageText}\n\n`;
+            }
+
+            return fullText;
+        } catch (err) {
+            console.error(err);
+            setError("Failed to extract text from PDF.");
+            return "";
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const signPDF = async (
+        file: File,
+        signatureDataUrl: string,
+        pageIndex: number,
+        x: number, // Bottom-left origin
+        y: number, // Bottom-left origin
+        width: number,
+        height: number
+    ) => {
+        try {
+            setIsProcessing(true);
+            setError(null);
+
+            const fileBuffer = await readFileAsArrayBuffer(file);
+            const pdfDoc = await PDFDocument.load(fileBuffer);
+
+            const imageBytes = await fetch(signatureDataUrl).then((res) => res.arrayBuffer());
+            const signatureImage = await pdfDoc.embedPng(imageBytes);
+
+            const page = pdfDoc.getPages()[pageIndex];
+
+            page.drawImage(signatureImage, {
+                x,
+                y,
+                width,
+                height,
+            });
+
+            const pdfBytes = await pdfDoc.save();
+            const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
+            downloadBlob(blob, `signed_${file.name}`);
+        } catch (err) {
+            console.error(err);
+            setError("Failed to sign PDF.");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     const rotatePDF = async (file: File, rotation: 90 | 180 | 270, outputName = "rotated.pdf") => {
         try {
             setIsProcessing(true);
@@ -223,6 +340,33 @@ export function usePDF() {
         }
     };
 
+    const splitPDF = async (
+        file: File,
+        pageIndices: number[], // 0-based indices
+        outputName = "split.pdf"
+    ) => {
+        try {
+            setIsProcessing(true);
+            setError(null);
+
+            const fileBuffer = await readFileAsArrayBuffer(file);
+            const pdfDoc = await PDFDocument.load(fileBuffer);
+            const newPdf = await PDFDocument.create();
+
+            const copiedPages = await newPdf.copyPages(pdfDoc, pageIndices);
+            copiedPages.forEach((page) => newPdf.addPage(page));
+
+            const pdfBytes = await newPdf.save();
+            const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
+            downloadBlob(blob, outputName);
+        } catch (err) {
+            console.error(err);
+            setError("Failed to split PDF.");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     const watermarkPDF = async (
         file: File,
         text: string,
@@ -280,9 +424,83 @@ export function usePDF() {
         }
     };
 
+    const unlockPDF = async (file: File, password: string) => {
+        try {
+            setIsProcessing(true);
+            setError(null);
+
+            const fileBuffer = await readFileAsArrayBuffer(file);
+            // Attempt to load with password. If it fails, pdf-lib throws error.
+            const pdfDoc = await PDFDocument.load(fileBuffer, { password });
+
+            // Saving automatically removes encryption unless specifically re-encrypted
+            const pdfBytes = await pdfDoc.save();
+            const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
+            downloadBlob(blob, `unlocked_${file.name}`);
+        } catch (err) {
+            console.error(err);
+            setError("Failed to unlock PDF. Incorrect password?");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const addPageNumbers = async (
+        file: File,
+        position: 'bottom-center' | 'bottom-right' | 'bottom-left' = 'bottom-center'
+    ) => {
+        try {
+            setIsProcessing(true);
+            setError(null);
+
+            const fileBuffer = await readFileAsArrayBuffer(file);
+            const pdfDoc = await PDFDocument.load(fileBuffer);
+            const pages = pdfDoc.getPages();
+
+            const { StandardFonts, rgb } = await import("pdf-lib");
+            const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+            pages.forEach((page, index) => {
+                const { width, height } = page.getSize();
+                const fontSize = 12;
+                const text = `${index + 1} / ${pages.length}`;
+                const textWidth = font.widthOfTextAtSize(text, fontSize);
+
+                let x = width / 2 - textWidth / 2;
+                if (position === 'bottom-left') x = 20;
+                if (position === 'bottom-right') x = width - textWidth - 20;
+
+                const y = 20; // Bottom margin
+
+                page.drawText(text, {
+                    x,
+                    y,
+                    size: fontSize,
+                    font: font,
+                    color: rgb(0, 0, 0),
+                });
+            });
+
+            const pdfBytes = await pdfDoc.save();
+            const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
+            downloadBlob(blob, `numbered_${file.name}`);
+        } catch (err) {
+            console.error(err);
+            setError("Failed to add page numbers.");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     return {
         mergePDFs,
+        splitPDF,
         imagesToPDF,
+        pdfToImages,
+        pdfToText,
+        signPDF,
+        unlockPDF,
+        addPageNumbers,
         rotatePDF,
         protectPDF,
         compressPDF,

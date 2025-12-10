@@ -13,6 +13,7 @@
     "convertapi": "^1.15.0",
     "firebase": "^12.6.0",
     "framer-motion": "^12.23.25",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.555.0",
     "next": "16.0.7",
     "pdf-lib": "1.17.1",

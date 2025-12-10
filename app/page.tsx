@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import { FileStack, Minimize2, Image as ImageIcon, RotateCw, Shield, Wand2, LayoutGrid, Droplets } from "lucide-react";
+import { FileStack, Minimize2, Image as ImageIcon, RotateCw, Shield, Wand2, LayoutGrid, Droplets, Scissors, PenLine, FileText, Lock, Hash, FileArchive } from "lucide-react";
 
 const tools = [
   {
@@ -60,6 +60,54 @@ const tools = [
     href: "/secure",
     color: "rgba(236, 72, 153, 0.4)", // Pink
     span: "col-span-1 md:col-span-2",
+  },
+  {
+    title: "Split PDF",
+    description: "Extract specific pages from your document.",
+    icon: Scissors,
+    href: "/split",
+    color: "rgba(251, 146, 60, 0.4)", // Orange
+    span: "col-span-1",
+  },
+  {
+    title: "PDF to Image",
+    description: "Convert pages to high-quality images.",
+    icon: FileArchive,
+    href: "/pdf-to-image",
+    color: "rgba(236, 72, 153, 0.4)", // Pink
+    span: "col-span-1",
+  },
+  {
+    title: "PDF to Text",
+    description: "Extract text content from any PDF.",
+    icon: FileText,
+    href: "/pdf-to-text",
+    color: "rgba(56, 189, 248, 0.4)", // Sky
+    span: "col-span-1",
+  },
+  {
+    title: "Sign PDF",
+    description: "Add your signature to documents.",
+    icon: PenLine,
+    href: "/sign",
+    color: "rgba(168, 85, 247, 0.4)", // Purple
+    span: "col-span-1 md:col-span-2",
+  },
+  {
+    title: "Unlock PDF",
+    description: "Remove passwords from your files.",
+    icon: Lock,
+    href: "/unlock",
+    color: "rgba(239, 68, 68, 0.4)", // Red
+    span: "col-span-1",
+  },
+  {
+    title: "Page Numbers",
+    description: "Add sequential page numbering.",
+    icon: Hash,
+    href: "/page-numbers",
+    color: "rgba(34, 197, 94, 0.4)", // Green
+    span: "col-span-1",
   },
 ];
 
