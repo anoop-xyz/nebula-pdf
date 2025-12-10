@@ -40,26 +40,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const docRef = doc(db, "users", uid);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
-                setProfile(docSnap.data() as UserProfile);
+                const profileData = docSnap.data() as UserProfile;
+                setProfile(profileData);
+                // Cache profile locally
+                localStorage.setItem("nebula_profile", JSON.stringify(profileData));
             } else {
                 setProfile(null);
+                localStorage.removeItem("nebula_profile");
             }
         } catch (error: any) {
-            console.warn("Profile fetch failed (offline or missing permissions):", error.message);
-            // If offline, we can't do much. Keep profile as null? 
-            // Or set a temporary "Guest" profile?
-            // For now, null prompts Onboarding, which might fail too if offline.
-            // Let's rely on the Onboarding Modal's retry logic.
+            console.warn("Profile fetch failed:", error.message);
         }
     };
 
     useEffect(() => {
+        // Try to load from cache first
+        const cached = localStorage.getItem("nebula_profile");
+        if (cached) {
+            try {
+                setProfile(JSON.parse(cached));
+            } catch (e) {
+                console.error("Failed to parse cached profile", e);
+            }
+        }
+
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             if (currentUser) {
+                // If we have a cached profile for this user, we might be good, but we should verify/update
+                // Checking if cached profile matches current user would be ideal but simple overwrite is okay for now
                 await fetchProfile(currentUser.uid);
             } else {
                 setProfile(null);
+                localStorage.removeItem("nebula_profile");
             }
             setIsLoading(false);
         });

@@ -18,7 +18,7 @@ const AVATARS = [
 ];
 
 export function OnboardingModal() {
-    const { user, profile, refreshProfile } = useAuth();
+    const { user, profile, refreshProfile, isLoading: isAuthLoading } = useAuth();
     const [username, setUsername] = useState("");
     const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0].src);
     const [isLoading, setIsLoading] = useState(false);
@@ -26,8 +26,9 @@ export function OnboardingModal() {
     const [emailSent, setEmailSent] = useState(false);
 
     // Check if profile is missing OR incomplete (missing username)
-    const isProfileIncomplete = !profile || !profile.username;
-    const isOpen = !!user && isProfileIncomplete && !isDismissed;
+    // IMPORTANT: Wait for isAuthLoading to be false before showing!
+    const isProfileIncomplete = !isAuthLoading && !profile || (!!profile && !profile.username);
+    const isOpen = !!user && isProfileIncomplete && !isDismissed && !isAuthLoading;
 
     const handleComplete = async () => {
         if (!user || !username) return;
