@@ -41,7 +41,7 @@ export function OnboardingModal() {
                 avatarUrl: selectedAvatar,
                 createdAt: Date.now(),
                 email: user.email
-            });
+            }, { merge: true });
 
             await refreshProfile(); // This updates state and closes modal
         } catch (err) {

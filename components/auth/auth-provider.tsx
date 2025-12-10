@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
 interface UserProfile {
@@ -35,25 +35,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const fetchProfile = async (uid: string) => {
-        try {
-            const docRef = doc(db, "users", uid);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                const profileData = docSnap.data() as UserProfile;
-                setProfile(profileData);
-                // Cache profile locally
-                localStorage.setItem("nebula_profile", JSON.stringify(profileData));
-            } else {
-                setProfile(null);
-                localStorage.removeItem("nebula_profile");
-            }
-        } catch (error: any) {
-            console.warn("Profile fetch failed:", error.message);
-        }
-    };
-
+    // Real-time listener reference
     useEffect(() => {
+        let unsubscribeProfile = () => { };
+
         // Try to load from cache first
         const cached = localStorage.getItem("nebula_profile");
         if (cached) {
@@ -64,26 +49,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         }
 
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
             setUser(currentUser);
+
+            // Unsubscribe from previous profile if exists
+            unsubscribeProfile();
+
             if (currentUser) {
-                // If we have a cached profile for this user, we might be good, but we should verify/update
-                // Checking if cached profile matches current user would be ideal but simple overwrite is okay for now
-                await fetchProfile(currentUser.uid);
+                // Set up real-time listener for profile
+                const docRef = doc(db, "users", currentUser.uid);
+                unsubscribeProfile = onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const profileData = docSnap.data() as UserProfile;
+                        setProfile(profileData);
+                        localStorage.setItem("nebula_profile", JSON.stringify(profileData));
+                    } else {
+                        setProfile(null);
+                        localStorage.removeItem("nebula_profile");
+                    }
+                    setIsLoading(false);
+                }, (error) => {
+                    console.warn("Profile sync failed:", error.message);
+                    setIsLoading(false);
+                });
             } else {
                 setProfile(null);
                 localStorage.removeItem("nebula_profile");
+                setIsLoading(false);
             }
-            setIsLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribeAuth();
+            unsubscribeProfile();
+        };
     }, []);
 
+    // Manual refresh is no longer needed with onSnapshot, but keeping for compatibility
     const refreshProfile = async () => {
-        if (user) {
-            await fetchProfile(user.uid);
-        }
+        // No-op: Profile sync is real-time now
     };
 
     return (
