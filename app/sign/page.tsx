@@ -84,7 +84,7 @@ export default function SignPage() {
                     const context = canvas.getContext("2d");
                     if (context) {
                         const renderContext = { canvasContext: context, viewport };
-                        const renderTask = page.render(renderContext);
+                        const renderTask = page.render(renderContext as any);
 
                         // Store reference
                         renderTaskRef.current = renderTask;
