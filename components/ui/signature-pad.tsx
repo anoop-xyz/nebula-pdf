@@ -7,6 +7,7 @@ import { Undo, Eraser } from "lucide-react";
 interface SignaturePadProps {
     className?: string;
     onChange?: () => void;
+    color?: string;
 }
 
 export interface SignaturePadRef {
@@ -16,10 +17,20 @@ export interface SignaturePadRef {
 }
 
 export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
-    ({ className, onChange }, ref) => {
+    ({ className, onChange, color = "#000000" }, ref) => {
         const canvasRef = useRef<HTMLCanvasElement>(null);
         const [isDrawing, setIsDrawing] = useState(false);
         const [hasSignature, setHasSignature] = useState(false);
+
+        // Update context color when prop changes
+        useEffect(() => {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+                ctx.strokeStyle = color;
+            }
+        }, [color]);
 
         // Resize observer to handle responsiveness
         useEffect(() => {
@@ -37,7 +48,7 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
                         ctx.lineWidth = 2;
                         ctx.lineCap = "round";
                         ctx.lineJoin = "round";
-                        ctx.strokeStyle = "#000000"; // Signature color (black)
+                        ctx.strokeStyle = color; // Use prop
                     }
                 }
             };
@@ -46,7 +57,7 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
             resizeCanvas();
 
             return () => window.removeEventListener("resize", resizeCanvas);
-        }, []);
+        }, [color]);
 
         const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
             setIsDrawing(true);

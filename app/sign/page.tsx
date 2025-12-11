@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ToolLayout } from "@/components/layout/tool-layout";
 import { FileUpload } from "@/components/ui/file-upload";
-import { MagneticButton } from "@/components/ui/magnetic-button";
 import { usePDF } from "@/hooks/use-pdf";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, Save, Pen, Trash2, X, Upload } from "lucide-react";
+import { motion } from "framer-motion";
 import { SignaturePad, SignaturePadRef } from "@/components/ui/signature-pad";
-import { Pen, Upload, X, ChevronLeft, ChevronRight, Save, Trash2 } from "lucide-react";
-import { motion, useDragControls } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { MagneticButton } from "@/components/ui/magnetic-button";
 
 export default function SignPage() {
     const [file, setFile] = useState<File | null>(null);
@@ -20,57 +21,102 @@ export default function SignPage() {
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<"draw" | "upload">("draw");
     const [signatureImage, setSignatureImage] = useState<string | null>(null);
-    const [signaturePosition, setSignaturePosition] = useState({ x: 0, y: 0 });
+    const [signatureColor, setSignatureColor] = useState("#000000"); // Black default
+
+    // Per-Page Signature State: Map pageNum -> Position & Size
+    type SignatureState = { x: number; y: number; width: number; height: number };
+    const [signatures, setSignatures] = useState<Record<number, SignatureState>>({});
+
+    // Current page signature
+    const currentSignature = signatures[pageNum];
 
     // Canvas Ref for PDF Page
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const signaturePadRef = useRef<SignaturePadRef>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
+    // Render Task Ref to handle cancellation
+    const renderTaskRef = useRef<any>(null);
+
     const { signPDF, isProcessing } = usePDF();
 
-    // Render PDF Page
+    // Render PDF Page - Robust Implementation
     useEffect(() => {
         if (!file || !canvasRef.current) return;
 
         const renderPage = async () => {
+            // Cancel previous task if valid
+            if (renderTaskRef.current) {
+                try {
+                    await renderTaskRef.current.cancel();
+                } catch (e) {
+                    // Start new task even if cancel fails/throws
+                }
+            }
+
             const pdfjsLib = await import("pdfjs-dist");
             pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
-            const buffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument(buffer).promise;
-            setNumPages(pdf.numPages);
+            try {
+                const buffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(buffer).promise;
+                setNumPages(pdf.numPages);
 
-            const page = await pdf.getPage(pageNum);
+                const page = await pdf.getPage(pageNum);
 
-            // Calculate scale to fit container width (max 800px)
-            const containerWidth = containerRef.current?.clientWidth || 800;
-            const unscaledViewport = page.getViewport({ scale: 1 });
-            const scale = Math.min(containerWidth / unscaledViewport.width, 1.5); // Cap scale
+                // Calculate scale to fit container width (max 800px)
+                const containerWidth = containerRef.current?.clientWidth || 800;
 
-            const viewport = page.getViewport({ scale });
+                // Get viewport at scale 1 to check dimensions/rotation first
+                const unscaledViewport = page.getViewport({ scale: 1 });
+                const scale = Math.min(containerWidth / unscaledViewport.width, 1.5);
 
-            const canvas = canvasRef.current;
-            if (canvas) {
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                setPdfDimensions({ width: viewport.width, height: viewport.height });
+                // Get final viewport with correct scale AND rotation
+                const viewport = page.getViewport({ scale });
 
-                const context = canvas.getContext("2d");
-                if (context) {
-                    await page.render({ canvasContext: context, viewport } as any).promise;
+                const canvas = canvasRef.current;
+                if (canvas) {
+                    // Set canvas dimensions to match viewport (handles rotation automatically)
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    setPdfDimensions({ width: viewport.width, height: viewport.height });
+
+                    const context = canvas.getContext("2d");
+                    if (context) {
+                        const renderContext = { canvasContext: context, viewport };
+                        const renderTask = page.render(renderContext);
+
+                        // Store reference
+                        renderTaskRef.current = renderTask;
+
+                        await renderTask.promise;
+                    }
+                }
+            } catch (error: any) {
+                if (error.name !== 'RenderingCancelledException') {
+                    console.error("PDF Render Error:", error);
                 }
             }
         };
 
         renderPage();
-    }, [file, pageNum]);
+
+        return () => {
+            if (renderTaskRef.current) {
+                // Try to cancel on unmount
+                try {
+                    renderTaskRef.current.cancel();
+                } catch (e) { }
+            }
+        };
+    }, [file, pageNum]); // Removed containerWidth dependency to stabilize
 
     const handleFilesSelected = (files: File[]) => {
         if (files.length > 0) {
             setFile(files[0]);
             setPageNum(1);
             setSignatureImage(null);
+            setSignatures({});
         }
     };
 
@@ -80,13 +126,7 @@ export default function SignPage() {
             if (dataUrl) {
                 setSignatureImage(dataUrl);
                 setIsSignatureModalOpen(false);
-                // Center signature initially
-                if (pdfDimensions) {
-                    setSignaturePosition({
-                        x: pdfDimensions.width / 2 - 100,
-                        y: pdfDimensions.height / 2 - 50
-                    });
-                }
+                addSignatureToPage(pageNum);
             }
         }
     };
@@ -99,61 +139,107 @@ export default function SignPage() {
                 const result = e.target?.result as string;
                 setSignatureImage(result);
                 setIsSignatureModalOpen(false);
-                if (pdfDimensions) {
-                    setSignaturePosition({
-                        x: pdfDimensions.width / 2 - 100,
-                        y: pdfDimensions.height / 2 - 50
-                    });
-                }
+                addSignatureToPage(pageNum);
             };
             reader.readAsDataURL(file);
         }
     };
 
+    const addSignatureToPage = (page: number) => {
+        if (pdfDimensions) {
+            setSignatures(prev => ({
+                ...prev,
+                [page]: {
+                    x: pdfDimensions.width / 2 - 100, // Center X
+                    y: pdfDimensions.height / 2 - 50,  // Center Y
+                    width: 200,
+                    height: 100
+                }
+            }));
+        }
+    };
+
+    const handleDragEnd = (_: any, info: any) => {
+        const current = signatures[pageNum];
+        if (!current) return;
+
+        setSignatures(prev => ({
+            ...prev,
+            [pageNum]: {
+                ...current,
+                x: current.x + info.offset.x,
+                y: current.y + info.offset.y
+            }
+        }));
+    };
+
+    const handleResizeStart = (e: React.PointerEvent) => {
+        e.stopPropagation(); // Prevent drag of parent
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startWidth = currentSignature!.width;
+        const startHeight = currentSignature!.height;
+
+        const onMove = (moveEvent: PointerEvent) => {
+            const newWidth = Math.max(50, startWidth + (moveEvent.clientX - startX));
+            const newHeight = Math.max(25, startHeight + (moveEvent.clientY - startY));
+
+            setSignatures(prev => ({
+                ...prev,
+                [pageNum]: {
+                    ...prev[pageNum],
+                    width: newWidth,
+                    height: newHeight
+                }
+            }));
+        };
+
+        const onUp = () => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+        };
+
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+    };
+
+
     const handleSave = async () => {
         if (!file || !signatureImage || !pdfDimensions || !containerRef.current) return;
 
-        // Calculate actual position from DOM element
-        const signatureEl = document.getElementById("signature-element");
-        if (!signatureEl) return;
-
-        const containerRect = containerRef.current.getBoundingClientRect();
-        const signatureRect = signatureEl.getBoundingClientRect();
-
-        // Calculate relative position (0,0 is top-left of container)
-        const relativeX = signatureRect.left - containerRect.left;
-        const relativeY = signatureRect.top - containerRect.top;
-
-        // PDF coordinate calculation
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
         const buffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument(buffer).promise;
-        const page = await pdf.getPage(pageNum);
+        const page = await pdf.getPage(1);
         const originalViewport = page.getViewport({ scale: 1 });
 
         const scaleX = originalViewport.width / pdfDimensions.width;
         const scaleY = originalViewport.height / pdfDimensions.height;
 
-        const displayedSignatureWidth = signatureRect.width;
-        const displayedSignatureHeight = signatureRect.height;
+        const signaturePayloads = [];
 
-        const pdfX = relativeX * scaleX;
-        // Flip Y axis: PDF (0,0) is bottom-left.
-        const pdfY = (pdfDimensions.height - relativeY - displayedSignatureHeight) * scaleY;
+        for (const [pageIndexStr, sig] of Object.entries(signatures)) {
+            const pageIndex = parseInt(pageIndexStr);
 
-        const pdfWidth = displayedSignatureWidth * scaleX;
-        const pdfHeight = displayedSignatureHeight * scaleY;
+            // Calculate PDF Coords
+            const pdfX = sig.x * scaleX;
+            const pdfY = (pdfDimensions.height - sig.y - sig.height) * scaleY; // Flip Y (PDF Origin is Bottom-Left)
+            const pdfW = sig.width * scaleX;
+            const pdfH = sig.height * scaleY;
 
-        await signPDF(
-            file,
-            signatureImage,
-            pageNum - 1,
-            pdfX,
-            pdfY,
-            pdfWidth,
-            pdfHeight
-        );
+            signaturePayloads.push({
+                pageIndex: pageIndex - 1, // 0-based index for backend
+                x: pdfX,
+                y: pdfY,
+                width: pdfW,
+                height: pdfH
+            });
+        }
+
+        if (signaturePayloads.length === 0) return;
+
+        await signPDF(file, signatureImage, signaturePayloads);
     };
 
     return (
@@ -196,21 +282,20 @@ export default function SignPage() {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            {!signatureImage ? (
-                                <MagneticButton
-                                    onClick={() => setIsSignatureModalOpen(true)}
-                                    className="px-4 py-2 bg-primary text-slate-900 font-semibold"
-                                >
-                                    <Pen className="w-4 h-4 mr-2" />
-                                    Create Signature
-                                </MagneticButton>
-                            ) : (
+                            <MagneticButton
+                                onClick={() => setIsSignatureModalOpen(true)}
+                                className="px-4 py-2 bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700"
+                            >
+                                <Pen className="w-4 h-4 mr-2" />
+                                {currentSignature ? "Replace Signature" : "Add Signature"}
+                            </MagneticButton>
+
+                            {Object.keys(signatures).length > 0 && (
                                 <MagneticButton
                                     onClick={handleSave}
                                     disabled={isProcessing}
-                                    className="px-4 py-2"
+                                    className="px-4 py-2 bg-primary text-slate-900 font-bold"
                                 >
-
                                     {isProcessing ? "Signing..." : (
                                         <>
                                             <Save className="w-4 h-4 mr-2" />
@@ -218,16 +303,6 @@ export default function SignPage() {
                                         </>
                                     )}
                                 </MagneticButton>
-                            )}
-
-                            {signatureImage && (
-                                <button
-                                    onClick={() => setSignatureImage(null)}
-                                    className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                                    title="Remove Signature"
-                                >
-                                    <Trash2 className="w-5 h-5" />
-                                </button>
                             )}
                         </div>
                     </div>
@@ -240,30 +315,54 @@ export default function SignPage() {
                     >
                         <canvas ref={canvasRef} className="w-full h-auto block" />
 
-                        {signatureImage && (
+                        {signatureImage && currentSignature && (
                             <motion.div
+                                key={`${pageNum}-${currentSignature.x}-${currentSignature.y}-${currentSignature.width}-${currentSignature.height}`}
                                 drag
                                 dragMomentum={false}
                                 dragConstraints={containerRef}
-                                onDragEnd={() => {
-                                    // We don't update state here to avoid re-render conflicts with framer's transform
-                                    // Position will be calculated via DOM inspection on save
-                                }}
+                                onDragEnd={handleDragEnd}
                                 className="absolute z-10 cursor-move group border-2 border-transparent hover:border-primary/50 rounded-lg"
                                 style={{
-                                    width: 200,
-                                    height: 100,
-                                    // Initial center position
-                                    left: signaturePosition.x,
-                                    top: signaturePosition.y
+                                    width: currentSignature.width,
+                                    height: currentSignature.height,
+                                    left: currentSignature.x,
+                                    top: currentSignature.y,
+                                    position: 'absolute'
                                 }}
-                                id="signature-element" // ID for easy retrieval
                             >
                                 <img
                                     src={signatureImage}
                                     alt="Signature"
                                     className="w-full h-full object-contain pointer-events-none"
                                 />
+
+                                {/* Resize Handle */}
+                                <div
+                                    onPointerDown={handleResizeStart}
+                                    className="absolute -bottom-3 -right-3 w-6 h-6 bg-primary border-2 border-white cursor-se-resize rounded-full shadow-md flex items-center justify-center z-30 touch-none"
+                                >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-slate-900">
+                                        <polyline points="21 16 21 21 16 21" />
+                                        <line x1="14" y1="10" x2="21" y2="21" />
+                                    </svg>
+                                </div>
+
+                                {/* Cross to Remove */}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSignatures(prev => {
+                                            const next = { ...prev };
+                                            delete next[pageNum];
+                                            return next;
+                                        });
+                                    }}
+                                    className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm z-20"
+                                    title="Remove from this page"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
                             </motion.div>
                         )}
                     </div>
@@ -281,39 +380,55 @@ export default function SignPage() {
                             </button>
                         </div>
 
-                        <div className="flex border-b border-slate-800">
-                            <button
-                                onClick={() => setActiveTab("draw")}
-                                className={cn(
-                                    "flex-1 py-3 text-sm font-medium transition-colors",
-                                    activeTab === "draw" ? "bg-slate-800 text-primary border-b-2 border-primary" : "text-slate-400 hover:bg-slate-800/50"
-                                )}
-                            >
-                                Draw
-                            </button>
-                            <button
-                                onClick={() => setActiveTab("upload")}
-                                className={cn(
-                                    "flex-1 py-3 text-sm font-medium transition-colors",
-                                    activeTab === "upload" ? "bg-slate-800 text-primary border-b-2 border-primary" : "text-slate-400 hover:bg-slate-800/50"
-                                )}
-                            >
-                                Upload Image
-                            </button>
-                        </div>
+                        <div className="p-4 flex-1 overflow-y-auto">
+                            <div className="flex gap-2 mb-4 p-1 bg-slate-800/50 rounded-lg">
+                                <button
+                                    onClick={() => setActiveTab("draw")}
+                                    className={cn(
+                                        "flex-1 py-1.5 text-sm font-medium rounded-md transition-all",
+                                        activeTab === "draw" ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
+                                    )}
+                                >
+                                    Draw
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab("upload")}
+                                    className={cn(
+                                        "flex-1 py-1.5 text-sm font-medium rounded-md transition-all",
+                                        activeTab === "upload" ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
+                                    )}
+                                >
+                                    Upload
+                                </button>
+                            </div>
 
-                        <div className="p-6 flex-1 bg-slate-950">
                             {activeTab === "draw" ? (
-                                <div className="h-64 border border-slate-700 rounded-xl overflow-hidden bg-white">
-                                    <SignaturePad ref={signaturePadRef} />
+                                <div className="space-y-4">
+                                    <div className="flex justify-center gap-3">
+                                        <button
+                                            onClick={() => setSignatureColor("#000000")} // Black
+                                            className={cn("w-6 h-6 rounded-full bg-black border-2", signatureColor === "#000000" ? "border-primary" : "border-transparent")}
+                                        />
+                                        <button
+                                            onClick={() => setSignatureColor("#2563eb")} // Blue
+                                            className={cn("w-6 h-6 rounded-full bg-blue-600 border-2", signatureColor === "#2563eb" ? "border-primary" : "border-transparent")}
+                                        />
+                                        <button
+                                            onClick={() => setSignatureColor("#dc2626")} // Red
+                                            className={cn("w-6 h-6 rounded-full bg-red-600 border-2", signatureColor === "#dc2626" ? "border-primary" : "border-transparent")}
+                                        />
+                                    </div>
+                                    <div className="h-48 border border-slate-700 rounded-xl overflow-hidden bg-white">
+                                        <SignaturePad ref={signaturePadRef} color={signatureColor} />
+                                    </div>
                                 </div>
                             ) : (
-                                <div className="h-64 border-2 border-dashed border-slate-700 rounded-xl flex flex-col items-center justify-center bg-slate-900 hover:bg-slate-800 transition-colors">
+                                <div className="relative h-64 border-2 border-dashed border-slate-700 rounded-xl flex flex-col items-center justify-center bg-slate-900 hover:bg-slate-800 transition-colors">
                                     <input
                                         type="file"
                                         accept="image/*"
                                         onChange={handleUploadSignature}
-                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     />
                                     <Upload className="w-8 h-8 text-slate-500 mb-2" />
                                     <p className="text-sm text-slate-400">Click to upload image</p>

@@ -151,11 +151,7 @@ export function usePDF() {
     const signPDF = async (
         file: File,
         signatureDataUrl: string,
-        pageIndex: number,
-        x: number, // Bottom-left origin
-        y: number, // Bottom-left origin
-        width: number,
-        height: number
+        signatures: { pageIndex: number; x: number; y: number; width: number; height: number }[]
     ) => {
         try {
             setIsProcessing(true);
@@ -167,13 +163,18 @@ export function usePDF() {
             const imageBytes = await fetch(signatureDataUrl).then((res) => res.arrayBuffer());
             const signatureImage = await pdfDoc.embedPng(imageBytes);
 
-            const page = pdfDoc.getPages()[pageIndex];
+            const pages = pdfDoc.getPages();
 
-            page.drawImage(signatureImage, {
-                x,
-                y,
-                width,
-                height,
+            signatures.forEach(({ pageIndex, x, y, width, height }) => {
+                if (pageIndex >= 0 && pageIndex < pages.length) {
+                    const page = pages[pageIndex];
+                    page.drawImage(signatureImage, {
+                        x,
+                        y,
+                        width,
+                        height,
+                    });
+                }
             });
 
             const pdfBytes = await pdfDoc.save();

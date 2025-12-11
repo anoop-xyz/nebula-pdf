@@ -111,7 +111,17 @@ const tools = [
   },
 ];
 
+import { useState } from "react";
+import { Search } from "lucide-react";
+
 export default function Home() {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredTools = tools.filter((tool) =>
+    tool.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    tool.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8 md:p-24 relative z-10">
       <div className="max-w-5xl w-full space-y-12">
@@ -126,8 +136,23 @@ export default function Home() {
           </p>
         </div>
 
+        {/* Search Bar */}
+        <div className="relative max-w-md mx-auto w-full group">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-xl blur-xl group-hover:blur-2xl transition-all opacity-50" />
+          <div className="relative bg-slate-900/80 border border-slate-800 backdrop-blur-sm rounded-xl flex items-center p-1 focus-within:border-slate-600 transition-colors">
+            <Search className="w-5 h-5 text-slate-400 ml-3" />
+            <input
+              type="text"
+              placeholder="Search tools..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-transparent border-none text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-0 px-3 py-2"
+            />
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {tools.map((tool) => (
+          {filteredTools.map((tool) => (
             <Link key={tool.title} href={tool.href} className={tool.span}>
               <SpotlightCard
                 className="h-full flex flex-col justify-between group/card"
@@ -153,6 +178,12 @@ export default function Home() {
               </SpotlightCard>
             </Link>
           ))}
+
+          {filteredTools.length === 0 && (
+            <div className="col-span-full text-center py-12 text-slate-500">
+              No tools found matching "{searchQuery}"
+            </div>
+          )}
         </div>
       </div>
     </main>
