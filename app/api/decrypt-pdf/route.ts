@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_KEY = 'anoop032006@gmail.com_jufjkDtsJHHoXJviLcCsZb0qHxpQfb1w8EErSV5UQy2yEyVBhA9VQL9aAmvFCHm9';
+const API_KEY = process.env.PDF_CO_API_KEY as string;
+
+if (!API_KEY) {
+    console.error("PDF_CO_API_KEY is not defined in environment variables");
+}
 
 export async function POST(req: NextRequest) {
     try {
