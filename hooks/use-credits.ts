@@ -7,11 +7,13 @@ import { toast } from 'sonner';
 export type ToolType = 'secure' | 'unlock';
 
 interface CreditInfo {
-    count: number;
+    free: number;
+    paid: number;
+    count: number; // For backward compatibility/easy access (free + paid)
     lastReset: string;
 }
 
-const MAX_CREDITS = 3;
+const MAX_FREE_CREDITS = 3;
 const RESET_PERIOD_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function useCredits() {
@@ -19,17 +21,35 @@ export function useCredits() {
     const [isLoading, setIsLoading] = useState(false);
 
     const getCredits = (tool: ToolType): CreditInfo => {
-        if (!profile?.credits?.[tool]) {
-            // Default if undefined
-            return { count: MAX_CREDITS, lastReset: new Date().toISOString() };
+        const defaultInfo = {
+            free: MAX_FREE_CREDITS,
+            paid: 0,
+            count: MAX_FREE_CREDITS,
+            lastReset: new Date().toISOString()
+        };
+
+        if (!profile?.credits) {
+            return defaultInfo;
         }
-        return profile.credits[tool];
+
+        const toolData = profile.credits[tool];
+        const globalPaid = profile.credits.paid ?? 0;
+
+        // Handling undefined toolData (e.g. new tool added)
+        const free = toolData?.free ?? MAX_FREE_CREDITS;
+        const lastReset = toolData?.lastReset ?? new Date().toISOString();
+
+        return {
+            free,
+            paid: globalPaid,
+            count: free + globalPaid,
+            lastReset
+        };
     };
 
     const getTimeUntilReset = (tool: ToolType): number => {
         const credits = getCredits(tool);
-        // If we have credits, no timer needed effectively, but logic is primarily for when count < MAX
-        // Actually, timer counts down from lastReset + 24h
+        // Reset only matters for FREE credits.
         const nextResetTime = new Date(credits.lastReset).getTime() + RESET_PERIOD_MS;
         const now = Date.now();
         return Math.max(0, nextResetTime - now);
@@ -41,26 +61,16 @@ export function useCredits() {
         const credits = getCredits(tool);
         const timeUntilReset = getTimeUntilReset(tool);
 
-        // Usage Logic:
-        // 1. If timeUntilReset == 0 (meaning 24h passed), reset to MAX_CREDITS.
-        // 2. We only persist the reset when they try to use it or we detect it, 
-        //    to avoid constant writes. But here we can do it on load or check.
-
-        if (timeUntilReset === 0 && credits.count < MAX_CREDITS) {
-            // It's time to reset!
+        // Logic: If time passed AND free credits < MAX, reset FREE to MAX.
+        // Never touch PAID credits here.
+        if (timeUntilReset === 0 && credits.free < MAX_FREE_CREDITS) {
             const userRef = doc(db, 'users', user.uid);
-            const now = new Date().toISOString();
 
             await updateDoc(userRef, {
-                [`credits.${tool}`]: {
-                    count: MAX_CREDITS,
-                    lastReset: now // Reset timer starts NOW? Or from previous? 
-                    // Requirement: "regenerates to 3 after 24hrs". 
-                    // Usually this implies a daily rolling window or reset from last expiry.
-                    // For simplicity and standard logic: Reset timestamp becomes Now.
-                }
+                [`credits.${tool}.free`]: MAX_FREE_CREDITS,
+                [`credits.${tool}.lastReset`]: new Date().toISOString()
             });
-            return true; // Reset happened
+            return true;
         }
         return false;
     };
@@ -70,38 +80,50 @@ export function useCredits() {
         setIsLoading(true);
 
         try {
-            // Ensure strictly up to date
             const didReset = await checkAndResetCredits(tool);
-            // If we reset, we have MAX_CREDITS. If not, we use current local/profile state.
-            // Since refreshProfile isn't instant, we might need to rely on the calc.
+            const currentCredits = getCredits(tool);
 
-            // Re-calc after potential reset
-            let currentCount = didReset ? MAX_CREDITS : getCredits(tool).count;
-            const currentLastReset = getCredits(tool).lastReset;
+            // Re-evaluate after possible reset
+            let free = didReset ? MAX_FREE_CREDITS : currentCredits.free;
+            let paid = currentCredits.paid;
+            let lastReset = didReset ? new Date().toISOString() : currentCredits.lastReset;
 
-            if (currentCount > 0) {
-                const userRef = doc(db, 'users', user.uid);
+            let usedFree = false;
+            let usedPaid = false;
 
-                // If this is the FIRST use after a full reset (i.e. we are at MAX), 
-                // we should set the 'lastReset' timer start NOW.
-                // If we are already mid-cycle (e.g. 2/3), keep old timer.
-                // Requirement: "24-hour timer will be tracked from the first use after a full reset"
-
-                let newLastReset = currentLastReset;
-                if (currentCount === MAX_CREDITS) {
-                    newLastReset = new Date().toISOString();
+            // Logic: Burn FREE first.
+            if (free > 0) {
+                // If we are at MAX, start the timer now
+                if (free === MAX_FREE_CREDITS) {
+                    lastReset = new Date().toISOString();
                 }
-
-                await updateDoc(userRef, {
-                    [`credits.${tool}`]: {
-                        count: currentCount - 1,
-                        lastReset: newLastReset
-                    }
-                });
-                return true;
-            } else {
-                return false; // No credits
+                free--;
+                usedFree = true;
             }
+            // If no FREE, burn PAID
+            else if (paid > 0) {
+                paid--;
+                usedPaid = true;
+            }
+            else {
+                return false; // No credits at all
+            }
+
+            const userRef = doc(db, 'users', user.uid);
+
+            // Construct update object based on what was used
+            const updates: any = {};
+            if (usedFree) {
+                updates[`credits.${tool}.free`] = free;
+                updates[`credits.${tool}.lastReset`] = lastReset;
+            }
+            if (usedPaid) {
+                updates[`credits.paid`] = paid;
+            }
+
+            await updateDoc(userRef, updates);
+            return true;
+
         } catch (error) {
             console.error("Error deducting credit:", error);
             toast.error("Failed to process credit.");

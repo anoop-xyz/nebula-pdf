@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Menu, X, Rocket, User, LogOut } from "lucide-react";
+import { Menu, X, Rocket, User, LogOut, Coins } from "lucide-react";
 import { AuthModal } from "@/components/auth/auth-modal";
+import { CreditPurchaseModal } from "@/components/payment/credit-purchase-modal";
 import { useAuth } from "@/components/auth/auth-provider";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -15,6 +16,7 @@ export function Navbar() {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
     const pathname = usePathname();
     const { user, profile } = useAuth();
     const [showDropdown, setShowDropdown] = useState(false);
@@ -98,51 +100,73 @@ export function Navbar() {
                         {/* Auth Section (Desktop) */}
                         <div className="hidden md:flex items-center">
                             {user ? (
-                                <div className="relative">
+                                <div className="flex items-center">
+                                    {/* Coins / Credits Button */}
                                     <button
-                                        onClick={() => setShowDropdown(!showDropdown)}
-                                        className="flex items-center space-x-3 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                                        onClick={() => setIsPurchaseModalOpen(true)}
+                                        className="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 transition-colors mr-3 group"
                                     >
-                                        {profile?.avatarUrl ? (
-                                            <img src={profile.avatarUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-emerald-500/50" />
-                                        ) : (
-                                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500" />
-                                        )}
-                                        <span className="text-sm font-medium text-slate-200">{profile?.username || "Commander"}</span>
+                                        <Coins className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
+                                        <span className="text-sm font-medium text-purple-200">Get Credits</span>
                                     </button>
 
-                                    {/* Dropdown */}
-                                    <AnimatePresence>
-                                        {showDropdown && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, y: 10 }}
-                                                className="absolute right-0 mt-2 w-48 rounded-xl border border-white/10 bg-[#0f172a]/95 backdrop-blur-xl shadow-xl overflow-hidden"
-                                            >
-                                                <div className="p-3 border-b border-white/5">
-                                                    <p className="text-xs text-slate-500">Signed in as</p>
-                                                    <p className="text-sm font-medium text-white truncate">{user.email}</p>
-                                                </div>
-                                                {(!profile || !profile.username) && (
-                                                    <button
-                                                        onClick={() => window.location.reload()}
-                                                        className="w-full flex items-center space-x-2 px-4 py-3 text-sm text-emerald-400 hover:bg-white/5 transition-colors text-left"
-                                                    >
-                                                        <User className="w-4 h-4" />
-                                                        <span>Complete Profile</span>
-                                                    </button>
-                                                )}
-                                                <button
-                                                    onClick={handleSignOut}
-                                                    className="w-full flex items-center space-x-2 px-4 py-3 text-sm text-red-400 hover:bg-white/5 transition-colors text-left"
+                                    {/* Profile Button */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setShowDropdown(!showDropdown)}
+                                            className="flex items-center space-x-3 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                                        >
+                                            {profile?.avatarUrl ? (
+                                                <img src={profile.avatarUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-emerald-500/50" />
+                                            ) : (
+                                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500" />
+                                            )}
+                                            <span className="text-sm font-medium text-slate-200">{profile?.username || "Commander"}</span>
+                                        </button>
+
+                                        {/* Dropdown */}
+                                        <AnimatePresence>
+                                            {showDropdown && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: 10 }}
+                                                    className="absolute right-0 mt-2 w-48 rounded-xl border border-white/10 bg-[#0f172a]/95 backdrop-blur-xl shadow-xl overflow-hidden"
                                                 >
-                                                    <LogOut className="w-4 h-4" />
-                                                    <span>Sign Out</span>
-                                                </button>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
+                                                    <div className="p-3 border-b border-white/5">
+                                                        <p className="text-xs text-slate-500">Signed in as</p>
+                                                        <p className="text-sm font-medium text-white truncate">{user.email}</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            setShowDropdown(false);
+                                                            setIsPurchaseModalOpen(true);
+                                                        }}
+                                                        className="w-full flex items-center space-x-2 px-4 py-3 text-sm text-purple-400 hover:bg-white/5 transition-colors text-left"
+                                                    >
+                                                        <Coins className="w-4 h-4" />
+                                                        <span>My Credits</span>
+                                                    </button>
+                                                    {(!profile || !profile.username) && (
+                                                        <button
+                                                            onClick={() => window.location.reload()}
+                                                            className="w-full flex items-center space-x-2 px-4 py-3 text-sm text-emerald-400 hover:bg-white/5 transition-colors text-left"
+                                                        >
+                                                            <User className="w-4 h-4" />
+                                                            <span>Complete Profile</span>
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={handleSignOut}
+                                                        className="w-full flex items-center space-x-2 px-4 py-3 text-sm text-red-400 hover:bg-white/5 transition-colors text-left"
+                                                    >
+                                                        <LogOut className="w-4 h-4" />
+                                                        <span>Sign Out</span>
+                                                    </button>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
                                 </div>
                             ) : (
                                 <button
@@ -246,6 +270,12 @@ export function Navbar() {
                 <AuthModal
                     isOpen={isAuthModalOpen}
                     onClose={() => setIsAuthModalOpen(false)}
+                />
+
+                {/* Credit Purchase Modal */}
+                <CreditPurchaseModal
+                    isOpen={isPurchaseModalOpen}
+                    onClose={() => setIsPurchaseModalOpen(false)}
                 />
             </motion.nav>
         </>

@@ -13,8 +13,15 @@ export interface UserProfile {
     avatarUrl?: string; // URL to Firebase Storage or Google Photo
     createdAt?: any;
     credits?: {
-        secure?: { count: number; lastReset: string };
-        unlock?: { count: number; lastReset: string };
+        paid?: number; // Global paid credits for all tools
+        secure?: {
+            free: number;
+            lastReset: string;
+        };
+        unlock?: {
+            free: number;
+            lastReset: string;
+        };
     };
 }
 

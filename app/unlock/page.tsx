@@ -11,6 +11,7 @@ import { useCredits } from "@/hooks/use-credits";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AuthModal } from "@/components/auth/auth-modal";
+import { CreditPurchaseModal } from "@/components/payment/credit-purchase-modal";
 
 export default function UnlockPage() {
     const [file, setFile] = useState<File | null>(null);
@@ -19,6 +20,7 @@ export default function UnlockPage() {
     const { user } = useAuth();
     const { getCredits, deductCredit } = useCredits();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
     const router = useRouter();
 
     // Protect Route
@@ -48,7 +50,14 @@ export default function UnlockPage() {
 
         const credits = getCredits("unlock");
         if (credits.count <= 0) {
-            toast.error("Daily limit reached for Unlock PDF.");
+            toast("Daily limit reached", {
+                description: "Buy credits to continue instantly.",
+                action: {
+                    label: "Get Credits",
+                    onClick: () => setIsPurchaseModalOpen(true)
+                }
+            });
+            setIsPurchaseModalOpen(true);
             return;
         }
 
@@ -114,6 +123,9 @@ export default function UnlockPage() {
                     </div>
                 )}
             </div>
+
+            <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+            <CreditPurchaseModal isOpen={isPurchaseModalOpen} onClose={() => setIsPurchaseModalOpen(false)} />
         </ToolLayout>
     );
 }

@@ -117,6 +117,7 @@ import { Search, Coins } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useCredits, ToolType } from "@/hooks/use-credits";
 import { AuthModal } from "@/components/auth/auth-modal";
+import { CreditPurchaseModal } from "@/components/payment/credit-purchase-modal";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -125,6 +126,7 @@ export default function Home() {
   const { user } = useAuth();
   const { getCredits, getTimeUntilReset } = useCredits();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   const router = useRouter();
 
   // Force re-render periodically to update timers
@@ -182,7 +184,14 @@ export default function Home() {
       }
 
       if (isLocked) {
-        toast.error(`Daily limit reached. Resets in ${formatTime(timeRemaining)}`);
+        toast("Daily limit reached", {
+          description: "Buy credits to continue instantly or wait for reset.",
+          action: {
+            label: "Buy Credits",
+            onClick: () => setIsPurchaseModalOpen(true)
+          }
+        });
+        setIsPurchaseModalOpen(true);
         return;
       }
 
@@ -279,6 +288,7 @@ export default function Home() {
       </div>
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+      <CreditPurchaseModal isOpen={isPurchaseModalOpen} onClose={() => setIsPurchaseModalOpen(false)} />
     </main>
   );
 }

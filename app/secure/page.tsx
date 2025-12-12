@@ -12,6 +12,7 @@ import { useCredits } from "@/hooks/use-credits";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AuthModal } from "@/components/auth/auth-modal";
+import { CreditPurchaseModal } from "@/components/payment/credit-purchase-modal";
 
 export default function SecurePage() {
     const [file, setFile] = useState<File | null>(null);
@@ -21,6 +22,7 @@ export default function SecurePage() {
     const { user } = useAuth();
     const { getCredits, deductCredit } = useCredits();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
     const router = useRouter();
 
     // Protect Route via Effect (Optional but good backup)
@@ -48,7 +50,14 @@ export default function SecurePage() {
 
         const credits = getCredits("secure");
         if (credits.count <= 0) {
-            toast.error("Daily limit reached for Secure PDF.");
+            toast("Daily limit reached", {
+                description: "Buy credits to continue instantly.",
+                action: {
+                    label: "Get Credits",
+                    onClick: () => setIsPurchaseModalOpen(true)
+                }
+            });
+            setIsPurchaseModalOpen(true);
             return;
         }
 
@@ -169,6 +178,7 @@ export default function SecurePage() {
             </div>
 
             <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+            <CreditPurchaseModal isOpen={isPurchaseModalOpen} onClose={() => setIsPurchaseModalOpen(false)} />
         </ToolLayout>
     );
 }
