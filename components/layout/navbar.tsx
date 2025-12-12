@@ -34,10 +34,10 @@ export function Navbar() {
     };
 
     const navLinks = [
-        { name: "Merge", href: "/merge" },
-        { name: "Organize", href: "/organize" },
-        { name: "Compress", href: "/compress" },
-        { name: "Watermark", href: "/watermark" },
+        { name: "Instagram", href: "https://instagram.com/anoop__xyz", external: true },
+        { name: "GitHub", href: "https://github.com/anoop-xyz", external: true },
+        { name: "LinkedIn", href: "https://www.linkedin.com/in/anoopkumar-dev/", external: true },
+        { name: "Mail", href: "mailto:therealanoopkumar@gmail.com", external: true },
     ];
 
     return (
@@ -70,16 +70,28 @@ export function Navbar() {
                         {/* Desktop Navigation */}
                         <div className="hidden md:flex items-center space-x-8">
                             {navLinks.map((link) => (
-                                <Link
-                                    key={link.name}
-                                    href={link.href}
-                                    className={cn(
-                                        "text-sm font-medium transition-colors hover:text-emerald-400",
-                                        pathname === link.href ? "text-emerald-400" : "text-slate-400"
-                                    )}
-                                >
-                                    {link.name}
-                                </Link>
+                                link.external ? (
+                                    <a
+                                        key={link.name}
+                                        href={link.href}
+                                        target={link.href.startsWith("mailto") ? undefined : "_blank"}
+                                        rel={link.href.startsWith("mailto") ? undefined : "noopener noreferrer"}
+                                        className="text-sm font-medium text-slate-400 transition-colors hover:text-emerald-400"
+                                    >
+                                        {link.name}
+                                    </a>
+                                ) : (
+                                    <Link
+                                        key={link.name}
+                                        href={link.href}
+                                        className={cn(
+                                            "text-sm font-medium transition-colors hover:text-emerald-400",
+                                            pathname === link.href ? "text-emerald-400" : "text-slate-400"
+                                        )}
+                                    >
+                                        {link.name}
+                                    </Link>
+                                )
                             ))}
                         </div>
 
@@ -168,14 +180,27 @@ export function Navbar() {
                         >
                             <div className="px-4 pt-4 pb-6 space-y-4">
                                 {navLinks.map((link) => (
-                                    <Link
-                                        key={link.name}
-                                        href={link.href}
-                                        onClick={() => setIsMobileMenuOpen(false)}
-                                        className="block text-base font-medium text-slate-400 hover:text-emerald-400 transition-colors"
-                                    >
-                                        {link.name}
-                                    </Link>
+                                    link.external ? (
+                                        <a
+                                            key={link.name}
+                                            href={link.href}
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            target={link.href.startsWith("mailto") ? undefined : "_blank"}
+                                            rel={link.href.startsWith("mailto") ? undefined : "noopener noreferrer"}
+                                            className="block text-base font-medium text-slate-400 hover:text-emerald-400 transition-colors"
+                                        >
+                                            {link.name}
+                                        </a>
+                                    ) : (
+                                        <Link
+                                            key={link.name}
+                                            href={link.href}
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className="block text-base font-medium text-slate-400 hover:text-emerald-400 transition-colors"
+                                        >
+                                            {link.name}
+                                        </Link>
+                                    )
                                 ))}
 
                                 {/* Mobile Auth */}
