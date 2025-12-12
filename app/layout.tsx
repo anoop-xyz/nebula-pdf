@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 import { Navbar } from "@/components/layout/navbar";
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { OnboardingModal } from "@/components/auth/onboarding-modal";
+import { Footer } from "@/components/layout/footer";
 
 export default function RootLayout({
   children,
@@ -28,6 +29,7 @@ export default function RootLayout({
           <MouseProvider>
             {children}
           </MouseProvider>
+          <Footer />
         </AuthProvider>
       </body>
     </html>
