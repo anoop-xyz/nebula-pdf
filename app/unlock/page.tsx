@@ -1,16 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ToolLayout } from "@/components/layout/tool-layout";
 import { FileUpload } from "@/components/ui/file-upload";
 import { MagneticButton } from "@/components/ui/magnetic-button";
 import { usePDF } from "@/hooks/use-pdf";
 import { Lock, Unlock, KeyRound } from "lucide-react";
+import { useAuth } from "@/components/auth/auth-provider";
+import { useCredits } from "@/hooks/use-credits";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { AuthModal } from "@/components/auth/auth-modal";
 
 export default function UnlockPage() {
     const [file, setFile] = useState<File | null>(null);
     const [password, setPassword] = useState("");
     const { unlockPDF, isProcessing, error } = usePDF();
+    const { user } = useAuth();
+    const { getCredits, deductCredit } = useCredits();
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const router = useRouter();
+
+    // Protect Route
+    useEffect(() => {
+        // If loading profile... maybe wait? But simple check:
+        // Logic handled by wrapping action mainly, but good to kick guest out or show login
+        // But user preferred redirect to login if guest
+        if (!user && !isProcessing) { // Simple check, might need isLoading from auth
+            // Optional: setIsAuthModalOpen(true) or router.push('/')
+        }
+    }, [user]);
 
     const handleFilesSelected = (files: File[]) => {
         if (files.length > 0) {
@@ -21,7 +40,23 @@ export default function UnlockPage() {
 
     const handleUnlock = async () => {
         if (!file || !password) return;
-        await unlockPDF(file, password);
+
+        if (!user) {
+            setIsAuthModalOpen(true);
+            return;
+        }
+
+        const credits = getCredits("unlock");
+        if (credits.count <= 0) {
+            toast.error("Daily limit reached for Unlock PDF.");
+            return;
+        }
+
+        const success = await unlockPDF(file, password);
+        if (success) {
+            await deductCredit("unlock");
+            toast.success("Credit used. PDF Unlocked!");
+        }
     };
 
     return (

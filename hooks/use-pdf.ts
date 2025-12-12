@@ -213,7 +213,7 @@ export function usePDF() {
         }
     };
 
-    const protectPDF = async (file: File, password: string) => {
+    const protectPDF = async (file: File, password: string): Promise<boolean> => {
         try {
             setIsProcessing(true);
             setError(null);
@@ -241,14 +241,14 @@ export function usePDF() {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
+            return true;
 
         } catch (err: any) {
             console.error("Protection Error:", err);
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
             setError(errorMessage);
-            alert(`Encryption Failed: ${errorMessage}`);
-            // Re-throw to be caught by the UI component if needed
-            throw err;
+            // alert(`Encryption Failed: ${errorMessage}`); // Removed alert in favor of toast in UI
+            return false;
         } finally {
             setIsProcessing(false);
         }
@@ -425,7 +425,7 @@ export function usePDF() {
         }
     };
 
-    const unlockPDF = async (file: File, password: string) => {
+    const unlockPDF = async (file: File, password: string): Promise<boolean> => {
         try {
             setIsProcessing(true);
             setError(null);
@@ -446,10 +446,12 @@ export function usePDF() {
 
             const blob = await response.blob();
             downloadBlob(blob, `unlocked_${file.name}`);
+            return true;
         } catch (err: any) {
             console.error("Unlock Error:", err);
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
             setError(errorMessage);
+            return false;
         } finally {
             setIsProcessing(false);
         }

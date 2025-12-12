@@ -5,11 +5,17 @@ import { User, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
-interface UserProfile {
+export interface UserProfile {
     uid: string;
-    username: string;
-    avatarUrl: string;
-    createdAt: number;
+    email: string | null;
+    username?: string;
+    fullName?: string;
+    avatarUrl?: string; // URL to Firebase Storage or Google Photo
+    createdAt?: any;
+    credits?: {
+        secure?: { count: number; lastReset: string };
+        unlock?: { count: number; lastReset: string };
+    };
 }
 
 interface AuthContextType {

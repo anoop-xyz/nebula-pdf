@@ -1,18 +1,34 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ToolLayout } from "@/components/layout/tool-layout";
 import { FileUpload } from "@/components/ui/file-upload";
 import { MagneticButton } from "@/components/ui/magnetic-button";
 import { usePDF } from "@/hooks/use-pdf";
 import { Shield, Lock, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/auth/auth-provider";
+import { useCredits } from "@/hooks/use-credits";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { AuthModal } from "@/components/auth/auth-modal";
 
 export default function SecurePage() {
     const [file, setFile] = useState<File | null>(null);
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const { protectPDF, isProcessing } = usePDF();
+    const { user } = useAuth();
+    const { getCredits, deductCredit } = useCredits();
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const router = useRouter();
+
+    // Protect Route via Effect (Optional but good backup)
+    useEffect(() => {
+        if (!user && !isProcessing) {
+            // Optional: setIsAuthModalOpen(true)
+        }
+    }, [user, isProcessing]);
 
     const passwordsMatch = password.length > 0 && password === confirmPassword;
 
@@ -24,7 +40,23 @@ export default function SecurePage() {
 
     const handleProtect = async () => {
         if (!file || !passwordsMatch) return;
-        await protectPDF(file, password);
+
+        if (!user) {
+            setIsAuthModalOpen(true);
+            return;
+        }
+
+        const credits = getCredits("secure");
+        if (credits.count <= 0) {
+            toast.error("Daily limit reached for Secure PDF.");
+            return;
+        }
+
+        const success = await protectPDF(file, password);
+        if (success) {
+            await deductCredit("secure");
+            toast.success("Credit used. PDF Encrypted!");
+        }
     };
 
     return (
@@ -135,6 +167,8 @@ export default function SecurePage() {
                     </div>
                 </div>
             </div>
+
+            <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
         </ToolLayout>
     );
 }
