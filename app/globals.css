@@ -95,20 +95,21 @@ body::before {
   z-index: 0;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 10px;
+/* Hide Scrollbar Globally - Aggressive Force */
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  background: transparent !important;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--muted);
-  border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground);
+html,
+body {
+  overflow-x: hidden;
+  /* Ensure vertical scroll is allowed but hidden */
+  overflow-y: auto;
 }

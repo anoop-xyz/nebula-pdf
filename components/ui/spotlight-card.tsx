@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { useMouse } from "@/components/layout/mouse-context";
 import { motion, useMotionTemplate, useSpring, HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -17,33 +16,17 @@ export function SpotlightCard({
     spotlightColor = "rgba(56, 189, 248, 0.25)", // Sky-400 with opacity
     ...props
 }: SpotlightCardProps) {
-    const { x, y } = useMouse();
     const cardRef = useRef<HTMLDivElement>(null);
     const [isHovered, setIsHovered] = useState(false);
 
     const mouseX = useSpring(0, { stiffness: 500, damping: 100 });
     const mouseY = useSpring(0, { stiffness: 500, damping: 100 });
 
-    useEffect(() => {
-        const unsubscribeX = x.on("change", (latestX) => {
-            if (cardRef.current) {
-                const rect = cardRef.current.getBoundingClientRect();
-                mouseX.set(latestX - rect.left);
-            }
-        });
-
-        const unsubscribeY = y.on("change", (latestY) => {
-            if (cardRef.current) {
-                const rect = cardRef.current.getBoundingClientRect();
-                mouseY.set(latestY - rect.top);
-            }
-        });
-
-        return () => {
-            unsubscribeX();
-            unsubscribeY();
-        };
-    }, [x, y, mouseX, mouseY]);
+    function handleMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent) {
+        const { left, top } = currentTarget.getBoundingClientRect();
+        mouseX.set(clientX - left);
+        mouseY.set(clientY - top);
+    }
 
     return (
         <motion.div
@@ -56,6 +39,7 @@ export function SpotlightCard({
             )}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            onMouseMove={handleMouseMove}
             {...props}
         >
             {/* Spotlight Gradient Layer */}
