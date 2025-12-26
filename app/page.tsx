@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import { FileStack, Minimize2, Image as ImageIcon, RotateCw, Shield, Wand2, LayoutGrid, Droplets, Scissors, PenLine, FileText, Lock, Hash, FileArchive } from "lucide-react";
+import { FileStack, Minimize2, Image as ImageIcon, RotateCw, Shield, Wand2, LayoutGrid, Droplets, Scissors, PenLine, FileText, Lock, Hash, FileArchive, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tools = [
+  // Row 1: Merge (2) | View (1)
   {
     title: "Merge PDF",
     description: "Combine multiple PDFs into a single file.",
@@ -14,6 +15,16 @@ const tools = [
     color: "rgba(168, 85, 247, 0.4)", // Purple
     span: "col-span-1 md:col-span-2",
   },
+  {
+    title: "View PDF",
+    description: "Read, zoom, and rotate PDFs.",
+    icon: Eye,
+    href: "/view",
+    color: "rgba(59, 130, 246, 0.4)", // Blue
+    span: "col-span-1",
+  },
+
+  // Row 2: Organize (1) | Compress (1) | Watermark (1)
   {
     title: "Organize PDF",
     description: "Rearrange pages and rotate individual slides.",
@@ -38,6 +49,16 @@ const tools = [
     color: "rgba(56, 189, 248, 0.4)", // Sky Blue
     span: "col-span-1",
   },
+
+  // Row 3: Secure (2) | Image to PDF (1)
+  {
+    title: "Secure PDF",
+    description: "Encrypt your PDF with a password.",
+    icon: Shield,
+    href: "/secure",
+    color: "rgba(236, 72, 153, 0.4)", // Pink
+    span: "col-span-1 md:col-span-2",
+  },
   {
     title: "Image to PDF",
     description: "Convert JPG, PNG images to PDF documents.",
@@ -46,6 +67,26 @@ const tools = [
     color: "rgba(239, 68, 68, 0.4)", // Red
     span: "col-span-1",
   },
+
+  // Row 4: Sign (2) | Unlock (1)
+  {
+    title: "Sign PDF",
+    description: "Add your signature to documents.",
+    icon: PenLine,
+    href: "/sign",
+    color: "rgba(168, 85, 247, 0.4)", // Purple
+    span: "col-span-1 md:col-span-2",
+  },
+  {
+    title: "Unlock PDF",
+    description: "Remove passwords from your files.",
+    icon: Lock,
+    href: "/unlock",
+    color: "rgba(239, 68, 68, 0.4)", // Red
+    span: "col-span-1",
+  },
+
+  // Row 5: Rotate (1) | Split (1) | PDF to Image (1)
   {
     title: "Rotate PDF",
     description: "Rotate specific pages or the entire document.",
@@ -53,14 +94,6 @@ const tools = [
     href: "/rotate",
     color: "rgba(234, 179, 8, 0.4)", // Yellow
     span: "col-span-1",
-  },
-  {
-    title: "Secure PDF",
-    description: "Encrypt your PDF with a password.",
-    icon: Shield,
-    href: "/secure",
-    color: "rgba(236, 72, 153, 0.4)", // Pink
-    span: "col-span-1 md:col-span-2",
   },
   {
     title: "Split PDF",
@@ -78,28 +111,14 @@ const tools = [
     color: "rgba(236, 72, 153, 0.4)", // Pink
     span: "col-span-1",
   },
+
+  // Row 6: PDF to Text (1) | Page Numbers (1)
   {
     title: "PDF to Text",
     description: "Extract text content from any PDF.",
     icon: FileText,
     href: "/pdf-to-text",
     color: "rgba(56, 189, 248, 0.4)", // Sky
-    span: "col-span-1",
-  },
-  {
-    title: "Sign PDF",
-    description: "Add your signature to documents.",
-    icon: PenLine,
-    href: "/sign",
-    color: "rgba(168, 85, 247, 0.4)", // Purple
-    span: "col-span-1 md:col-span-2",
-  },
-  {
-    title: "Unlock PDF",
-    description: "Remove passwords from your files.",
-    icon: Lock,
-    href: "/unlock",
-    color: "rgba(239, 68, 68, 0.4)", // Red
     span: "col-span-1",
   },
   {
