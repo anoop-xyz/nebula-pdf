@@ -598,7 +598,7 @@ function PageRenderer({ pageNum, pdfDoc, scale, rotation, id, tool, penColor, pe
                 if (!context) return;
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
-                const task = page.render({ canvasContext: context, viewport });
+                const task = page.render({ canvasContext: context, viewport } as any);
                 renderTaskRef.current = task;
                 await task.promise;
             } catch (error: any) { } finally { renderTaskRef.current = null; }
@@ -761,7 +761,7 @@ function SidebarThumbnail({ pageNum, pdfDoc, isCurrent, onSelect }: SidebarThumb
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
                 const ctx = canvas.getContext("2d");
-                if (ctx) page.render({ canvasContext: ctx, viewport }).promise.catch(() => { });
+                if (ctx) page.render({ canvasContext: ctx, viewport } as any).promise.catch(() => { });
             });
         }
         return () => { isMounted = false; };
