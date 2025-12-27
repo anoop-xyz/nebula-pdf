@@ -66,9 +66,9 @@ export const metadata: Metadata = {
     creator: "@anoop_xyz", // Placeholder
   },
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/globe.svg",
+    icon: "/nebula-logo.png",
+    shortcut: "/nebula-logo.png",
+    apple: "/nebula-logo.png",
   },
   manifest: "/manifest.json",
 };
