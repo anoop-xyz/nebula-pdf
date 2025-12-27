@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-    const baseUrl = 'https://nebula-pdf.vercel.app' // Replace with your actual domain
+    const baseUrl = 'https://pdfnebula.vercel.app' // Replace with your actual domain
 
     // Core Tools
     const routes = [
