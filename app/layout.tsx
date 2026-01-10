@@ -17,7 +17,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://pdfnebula.vercel.app'),
+  metadataBase: new URL('https://nebulapdf.online'),
   title: {
     default: "Nebula PDF | Next-Gen Online PDF Tools",
     template: "%s | Nebula PDF",
@@ -26,7 +26,8 @@ export const metadata: Metadata = {
   keywords: [
     "PDF tools", "merge PDF", "compress PDF", "split PDF", "convert PDF",
     "PDF to image", "PDF to text", "sign PDF", "edit PDF", "online PDF editor",
-    "secure PDF tools", "browser-based PDF", "Next.js PDF", "Nebula PDF"
+    "secure PDF tools", "browser-based PDF", "Next.js PDF", "Nebula PDF", "free pdf tools",
+    "combine pdf", "reduce pdf size", "extract pdf pages", "unlock pdf online"
   ],
   authors: [{ name: "Anoop Kumar" }],
   creator: "Anoop Kumar",
@@ -45,7 +46,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://pdfnebula.vercel.app",
+    url: "https://nebulapdf.online",
     title: "Nebula PDF | The Future of PDF Editing",
     description: "Experience the fastest, most secure PDF tools on the web. No uploads required for most operations.",
     siteName: "Nebula PDF",
