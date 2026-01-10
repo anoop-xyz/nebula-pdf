@@ -9,9 +9,10 @@ interface ToolLayoutProps {
     description: string;
     children: React.ReactNode;
     isLoading?: boolean;
+    progress?: number;
 }
 
-export function ToolLayout({ title, description, children, isLoading = false }: ToolLayoutProps) {
+export function ToolLayout({ title, description, children, isLoading = false, progress }: ToolLayoutProps) {
     return (
         <div className="min-h-screen p-6 md:p-12 flex flex-col relative">
             <AnimatePresence>
@@ -20,9 +21,22 @@ export function ToolLayout({ title, description, children, isLoading = false }: 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex flex-col items-center justify-center"
                     >
                         <NebulaLoader />
+                        {progress !== undefined && progress > 0 && (
+                            <div className="mt-8 w-64 space-y-2">
+                                <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+                                    <motion.div
+                                        className="h-full bg-primary"
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${progress}%` }}
+                                        transition={{ duration: 0.2 }}
+                                    />
+                                </div>
+                                <p className="text-center text-sm text-slate-400 font-medium">{progress}%</p>
+                            </div>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>

@@ -22,6 +22,10 @@ export interface UserProfile {
             free: number;
             lastReset: string;
         };
+        compress?: {
+            free: number;
+            lastReset: string;
+        };
     };
 }
 
