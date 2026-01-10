@@ -4,7 +4,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
 
-export type ToolType = 'secure' | 'unlock' | 'compress';
+export type ToolType = 'secure' | 'unlock';
 
 interface CreditInfo {
     free: number;

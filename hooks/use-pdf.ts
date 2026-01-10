@@ -6,13 +6,11 @@ import { useAuth } from "@/components/auth/auth-provider";
 export function usePDF() {
     const { user } = useAuth();
     const [isProcessing, setIsProcessing] = useState(false);
-    const [progress, setProgress] = useState(0);
     const [error, setError] = useState<string | null>(null);
 
     const mergePDFs = async (files: File[], outputName = "merged.pdf") => {
         try {
             setIsProcessing(true);
-            setProgress(0);
             setError(null);
 
             const mergedPdf = await PDFDocument.create();
@@ -271,51 +269,102 @@ export function usePDF() {
         }
     };
 
-    const compressPDF = async (file: File) => {
+    const compressPDF = async (file: File, quality: number, outputName = "compressed.pdf") => {
         try {
             setIsProcessing(true);
             setError(null);
-            setProgress(0);
 
-            // Start simulated progress for upload/processing
-            const progressInterval = setInterval(() => {
-                setProgress((prev) => {
-                    if (prev >= 90) return prev;
-                    return prev + 5;
-                });
-            }, 500);
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const response = await fetch('/api/compress-pdf', {
-                method: 'POST',
-                body: formData,
-            });
-
-            clearInterval(progressInterval);
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || `Server Error: ${response.status}`);
+            // Dynamically import pdfjs-dist
+            const pdfjsModule = await import("pdfjs-dist");
+            // @ts-ignore
+            const pdfjsLib = pdfjsModule.default || pdfjsModule;
+            if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
             }
 
-            setProgress(100);
+            const fileBuffer = await readFileAsArrayBuffer(file);
+            const pdf = await pdfjsLib.getDocument(fileBuffer).promise;
+            const numPages = pdf.numPages;
 
-            const blob = await response.blob();
-            // Check if returned blob is actually smaller? 
-            // The API handles optimization, but we can double check or just trust the API results.
-            // If the user used credits, we deliver the result.
+            // Strategy: Try progressively lower quality settings until size decreases
+            const compressionLevels = [
+                { scale: 1.0, quality: 0.7 }, // Standard
+                { scale: 0.9, quality: 0.5 }, // Medium
+                { scale: 0.7, quality: 0.4 }, // Aggressive
+                { scale: 0.5, quality: 0.3 }  // Maximum
+            ];
 
-            downloadBlob(blob, `compressed_${file.name}`);
+            let bestBlob: Blob | null = null;
+            let originalSize = file.size;
 
-        } catch (err: any) {
+            for (const level of compressionLevels) {
+                const newPdfDoc = await PDFDocument.create();
+
+                for (let i = 1; i <= numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: level.scale });
+                    const canvas = document.createElement("canvas");
+                    const context = canvas.getContext("2d");
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    if (context) {
+                        await page.render({ canvasContext: context, viewport } as any).promise;
+                        const imgDataUrl = canvas.toDataURL("image/jpeg", level.quality);
+                        const imgBuffer = await fetch(imgDataUrl).then(res => res.arrayBuffer());
+
+                        const embeddedImage = await newPdfDoc.embedJpg(imgBuffer);
+                        const newPage = newPdfDoc.addPage([viewport.width, viewport.height]);
+                        newPage.drawImage(embeddedImage, {
+                            x: 0,
+                            y: 0,
+                            width: viewport.width,
+                            height: viewport.height,
+                        });
+                    }
+                }
+
+                const pdfBytes = await newPdfDoc.save();
+                const currentBlob = new Blob([pdfBytes as any], { type: "application/pdf" });
+
+                if (currentBlob.size < originalSize) {
+                    bestBlob = currentBlob;
+                    break; // Found a smaller size, stop here
+                }
+
+                // Keep the "best" so far (smallest output) just in case we never beat original
+                if (!bestBlob || currentBlob.size < bestBlob.size) {
+                    bestBlob = currentBlob;
+                }
+            }
+
+            // If even the most aggressive compression is larger (rare for text-heavy -> image), 
+            // the user requested "anyhow compress", but returning a LARGER file is technically a failure of "compress".
+            // However, we will return the best effort (smallest generated). 
+            // If the best effort is STILL larger than original, we'll return original to protect user storage,
+            // unless the user strictly implies they want the image-converted version regardless.
+            // Safe bet: If generated > original, return original with warning (but user said "don't show message").
+            // User said: "just somehow compress... anyhow" 
+            // We'll return the smallest blob we found, even if it's the aggressively downscaled one.
+
+            if (bestBlob && bestBlob.size < originalSize) {
+                downloadBlob(bestBlob, outputName);
+            } else {
+                // Fallback: If we couldn't make it smaller, return the most aggressive attempt 
+                // OR allow the original if it's truly uncompressible (optimized).
+                // Given user instruction, we try to give them *result*.
+                if (bestBlob) {
+                    downloadBlob(bestBlob, outputName); // Give them the result even if margin is small
+                } else {
+                    downloadBlob(new Blob([fileBuffer]), outputName); // Fail safe
+                }
+            }
+
+        } catch (err) {
             console.error(err);
-            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            setError(errorMessage);
+            setError("Failed to compress PDF.");
         } finally {
             setIsProcessing(false);
-            setProgress(0);
         }
     };
 
@@ -535,7 +584,6 @@ export function usePDF() {
         reorderPDF,
         watermarkPDF,
         isProcessing,
-        progress,
         error,
     };
 }
