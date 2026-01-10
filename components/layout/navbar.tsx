@@ -5,9 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Menu, X, Rocket, User, LogOut, Coins } from "lucide-react";
+import { Menu, X, Rocket, User, LogOut, Coins, Clock } from "lucide-react";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { CreditPurchaseModal } from "@/components/payment/credit-purchase-modal";
+import { CreditsDisplayModal } from "@/components/payment/credits-display-modal";
 import { useAuth } from "@/components/auth/auth-provider";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -17,6 +18,7 @@ export function Navbar() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+    const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
     const pathname = usePathname();
     const { user, profile } = useAuth();
     const [showDropdown, setShowDropdown] = useState(false);
@@ -140,7 +142,7 @@ export function Navbar() {
                                                     <button
                                                         onClick={() => {
                                                             setShowDropdown(false);
-                                                            setIsPurchaseModalOpen(true);
+                                                            setIsCreditsModalOpen(true);
                                                         }}
                                                         className="w-full flex items-center space-x-2 px-4 py-3 text-sm text-purple-400 hover:bg-white/5 transition-colors text-left"
                                                     >
@@ -265,6 +267,15 @@ export function Navbar() {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Credits Display Modal */}
+                <CreditsDisplayModal
+                    isOpen={isCreditsModalOpen}
+                    onClose={() => setIsCreditsModalOpen(false)}
+                    onTopUp={() => setIsPurchaseModalOpen(true)}
+                />
+
+
 
                 {/* Auth Modal */}
                 <AuthModal

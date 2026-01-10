@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { PDFDocument, degrees } from "pdf-lib";
 import { readFileAsArrayBuffer, downloadBlob } from "@/lib/pdf-utils";
+import { useAuth } from "@/components/auth/auth-provider";
 
 export function usePDF() {
+    const { user } = useAuth();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -22,6 +24,7 @@ export function usePDF() {
 
             const pdfBytes = await mergedPdf.save();
             const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
+
             downloadBlob(blob, outputName);
         } catch (err) {
             console.error(err);
@@ -78,8 +81,12 @@ export function usePDF() {
             const JSZip = (await import("jszip")).default;
             const zip = new JSZip();
 
-            const pdfjsLib = await import("pdfjs-dist");
-            pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+            const pdfjsModule = await import("pdfjs-dist");
+            // @ts-ignore
+            const pdfjsLib = pdfjsModule.default || pdfjsModule;
+            if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+            }
 
             const buffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument(buffer).promise;
@@ -120,8 +127,12 @@ export function usePDF() {
             setIsProcessing(true);
             setError(null);
 
-            const pdfjsLib = await import("pdfjs-dist");
-            pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+            const pdfjsModule = await import("pdfjs-dist");
+            // @ts-ignore
+            const pdfjsLib = pdfjsModule.default || pdfjsModule;
+            if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+            }
 
             const buffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument(buffer).promise;
@@ -179,7 +190,9 @@ export function usePDF() {
 
             const pdfBytes = await pdfDoc.save();
             const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
-            downloadBlob(blob, `signed_${file.name}`);
+            const signedName = `signed_${file.name}`;
+
+            downloadBlob(blob, signedName);
         } catch (err) {
             console.error(err);
             setError("Failed to sign PDF.");
@@ -233,10 +246,12 @@ export function usePDF() {
             }
 
             const blob = await response.blob();
+            const secureName = `secure_${file.name}`;
+
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `secure_${file.name}`;
+            link.download = secureName;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -260,8 +275,12 @@ export function usePDF() {
             setError(null);
 
             // Dynamically import pdfjs-dist
-            const pdfjsLib = await import("pdfjs-dist");
-            pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+            const pdfjsModule = await import("pdfjs-dist");
+            // @ts-ignore
+            const pdfjsLib = pdfjsModule.default || pdfjsModule;
+            if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+            }
 
             const fileBuffer = await readFileAsArrayBuffer(file);
             const pdf = await pdfjsLib.getDocument(fileBuffer).promise;
@@ -445,7 +464,8 @@ export function usePDF() {
             }
 
             const blob = await response.blob();
-            downloadBlob(blob, `unlocked_${file.name}`);
+            const unlockedName = `unlocked_${file.name}`;
+            downloadBlob(blob, unlockedName);
             return true;
         } catch (err: any) {
             console.error("Unlock Error:", err);
@@ -495,7 +515,8 @@ export function usePDF() {
 
             const pdfBytes = await pdfDoc.save();
             const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
-            downloadBlob(blob, `numbered_${file.name}`);
+            const numberedName = `numbered_${file.name}`;
+            downloadBlob(blob, numberedName);
         } catch (err) {
             console.error(err);
             setError("Failed to add page numbers.");
