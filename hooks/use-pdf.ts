@@ -286,36 +286,80 @@ export function usePDF() {
             const pdf = await pdfjsLib.getDocument(fileBuffer).promise;
             const numPages = pdf.numPages;
 
-            const newPdfDoc = await PDFDocument.create();
+            // Strategy: Try progressively lower quality settings until size decreases
+            const compressionLevels = [
+                { scale: 1.0, quality: 0.7 }, // Standard
+                { scale: 0.9, quality: 0.5 }, // Medium
+                { scale: 0.7, quality: 0.4 }, // Aggressive
+                { scale: 0.5, quality: 0.3 }  // Maximum
+            ];
 
-            for (let i = 1; i <= numPages; i++) {
-                const page = await pdf.getPage(i);
-                const viewport = page.getViewport({ scale: 1.0 }); // Standard scale to prevent upscaling
-                const canvas = document.createElement("canvas");
-                const context = canvas.getContext("2d");
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
+            let bestBlob: Blob | null = null;
+            let originalSize = file.size;
 
-                if (context) {
-                    await page.render({ canvasContext: context, viewport } as any).promise;
-                    // Compress to JPEG
-                    const imgDataUrl = canvas.toDataURL("image/jpeg", quality); // Use quality slider (0-1)
-                    const imgBuffer = await fetch(imgDataUrl).then(res => res.arrayBuffer());
+            for (const level of compressionLevels) {
+                const newPdfDoc = await PDFDocument.create();
 
-                    const embeddedImage = await newPdfDoc.embedJpg(imgBuffer);
-                    const newPage = newPdfDoc.addPage([viewport.width, viewport.height]);
-                    newPage.drawImage(embeddedImage, {
-                        x: 0,
-                        y: 0,
-                        width: viewport.width,
-                        height: viewport.height,
-                    });
+                for (let i = 1; i <= numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: level.scale });
+                    const canvas = document.createElement("canvas");
+                    const context = canvas.getContext("2d");
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    if (context) {
+                        await page.render({ canvasContext: context, viewport } as any).promise;
+                        const imgDataUrl = canvas.toDataURL("image/jpeg", level.quality);
+                        const imgBuffer = await fetch(imgDataUrl).then(res => res.arrayBuffer());
+
+                        const embeddedImage = await newPdfDoc.embedJpg(imgBuffer);
+                        const newPage = newPdfDoc.addPage([viewport.width, viewport.height]);
+                        newPage.drawImage(embeddedImage, {
+                            x: 0,
+                            y: 0,
+                            width: viewport.width,
+                            height: viewport.height,
+                        });
+                    }
+                }
+
+                const pdfBytes = await newPdfDoc.save();
+                const currentBlob = new Blob([pdfBytes as any], { type: "application/pdf" });
+
+                if (currentBlob.size < originalSize) {
+                    bestBlob = currentBlob;
+                    break; // Found a smaller size, stop here
+                }
+
+                // Keep the "best" so far (smallest output) just in case we never beat original
+                if (!bestBlob || currentBlob.size < bestBlob.size) {
+                    bestBlob = currentBlob;
                 }
             }
 
-            const pdfBytes = await newPdfDoc.save();
-            const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
-            downloadBlob(blob, outputName);
+            // If even the most aggressive compression is larger (rare for text-heavy -> image), 
+            // the user requested "anyhow compress", but returning a LARGER file is technically a failure of "compress".
+            // However, we will return the best effort (smallest generated). 
+            // If the best effort is STILL larger than original, we'll return original to protect user storage,
+            // unless the user strictly implies they want the image-converted version regardless.
+            // Safe bet: If generated > original, return original with warning (but user said "don't show message").
+            // User said: "just somehow compress... anyhow" 
+            // We'll return the smallest blob we found, even if it's the aggressively downscaled one.
+
+            if (bestBlob && bestBlob.size < originalSize) {
+                downloadBlob(bestBlob, outputName);
+            } else {
+                // Fallback: If we couldn't make it smaller, return the most aggressive attempt 
+                // OR allow the original if it's truly uncompressible (optimized).
+                // Given user instruction, we try to give them *result*.
+                if (bestBlob) {
+                    downloadBlob(bestBlob, outputName); // Give them the result even if margin is small
+                } else {
+                    downloadBlob(new Blob([fileBuffer]), outputName); // Fail safe
+                }
+            }
+
         } catch (err) {
             console.error(err);
             setError("Failed to compress PDF.");
