@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import { createPortal } from "react-dom";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendEmailVerification } from "firebase/auth";
@@ -66,7 +67,16 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         }
     }
 
-    return (
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        return () => setMounted(false);
+    }, []);
+
+    if (!mounted) return null;
+
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <>
@@ -234,6 +244,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     </div>
                 </>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }

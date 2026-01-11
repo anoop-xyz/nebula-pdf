@@ -13,7 +13,7 @@ type Position = 'bottom-left' | 'bottom-center' | 'bottom-right';
 export default function PageNumbersPage() {
     const [file, setFile] = useState<File | null>(null);
     const [position, setPosition] = useState<Position>('bottom-center');
-    const { addPageNumbers, isProcessing } = usePDF();
+    const { addPageNumbers, isProcessing, progress } = usePDF();
 
     const handleFilesSelected = (files: File[]) => {
         if (files.length > 0) {
@@ -31,6 +31,7 @@ export default function PageNumbersPage() {
             title="Page Numbers"
             description="Add sequential page numbers to your document footer."
             isLoading={isProcessing}
+            progress={progress}
         >
             <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-start h-full">
                 <div className="h-full flex flex-col justify-center">

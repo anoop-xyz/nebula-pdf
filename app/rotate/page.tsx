@@ -12,7 +12,7 @@ export default function RotatePage() {
     const [file, setFile] = useState<File | null>(null);
     const [pages, setPages] = useState<{ index: number; image: string; rotation: number }[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const { rotatePDF, isProcessing } = usePDF();
+    const { rotatePDF, isProcessing, progress } = usePDF();
 
     const handleFilesSelected = (files: File[]) => {
         if (files.length > 0) {
@@ -93,6 +93,7 @@ export default function RotatePage() {
             title="Rotate PDF"
             description="Rotate individual pages or the entire document."
             isLoading={isProcessing || isLoading}
+            progress={progress}
         >
             {!file ? (
                 <div className="h-full flex flex-col items-center justify-center">

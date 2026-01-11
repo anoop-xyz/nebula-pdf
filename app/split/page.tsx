@@ -21,7 +21,7 @@ export default function SplitPage() {
     const [file, setFile] = useState<File | null>(null);
     const [pages, setPages] = useState<PageTile[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const { splitPDF, isProcessing } = usePDF();
+    const { splitPDF, isProcessing, progress } = usePDF();
 
     const handleFilesSelected = async (files: File[]) => {
         if (files.length > 0) {
@@ -94,6 +94,7 @@ export default function SplitPage() {
             title="Split PDF"
             description="Extract specific pages from your PDF document."
             isLoading={isProcessing || isLoading}
+            progress={progress}
         >
             {!file ? (
                 <div className="h-full flex flex-col items-center justify-center">

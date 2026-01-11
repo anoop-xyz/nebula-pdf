@@ -38,7 +38,7 @@ export default function SignPage() {
     // Render Task Ref to handle cancellation
     const renderTaskRef = useRef<any>(null);
 
-    const { signPDF, isProcessing } = usePDF();
+    const { signPDF, isProcessing, progress } = usePDF();
 
     // Render PDF Page - Robust Implementation
     useEffect(() => {
@@ -247,6 +247,7 @@ export default function SignPage() {
             title="Sign PDF"
             description="Draw your signature and place it on your document."
             isLoading={isProcessing}
+            progress={progress}
         >
             {!file ? (
                 <div className="flex-1 flex flex-col items-center justify-center">

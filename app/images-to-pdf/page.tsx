@@ -10,7 +10,7 @@ import { GripVertical, X, Image as ImageIcon } from "lucide-react";
 
 export default function ImagesToPdfPage() {
     const [files, setFiles] = useState<File[]>([]);
-    const { imagesToPDF, isProcessing } = usePDF();
+    const { imagesToPDF, isProcessing, progress } = usePDF();
 
     const handleFilesSelected = (newFiles: File[]) => {
         setFiles((prev) => [...prev, ...newFiles]);
@@ -30,6 +30,7 @@ export default function ImagesToPdfPage() {
             title="Images to PDF"
             description="Convert JPG and PNG images into a single PDF document."
             isLoading={isProcessing}
+            progress={progress}
         >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
                 <div className="space-y-6">

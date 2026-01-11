@@ -10,7 +10,7 @@ import { GripVertical, X, FileText } from "lucide-react";
 
 export default function MergePage() {
     const [files, setFiles] = useState<File[]>([]);
-    const { mergePDFs, isProcessing } = usePDF();
+    const { mergePDFs, isProcessing, progress } = usePDF();
 
     const handleFilesSelected = (newFiles: File[]) => {
         setFiles((prev) => [...prev, ...newFiles]);
@@ -30,6 +30,7 @@ export default function MergePage() {
             title="Merge PDF"
             description="Drag and drop PDFs to rearrange them, then merge into a single file."
             isLoading={isProcessing}
+            progress={progress}
         >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
                 {/* Left Column: Upload & List */}

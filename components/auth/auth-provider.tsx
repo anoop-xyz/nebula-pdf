@@ -13,15 +13,9 @@ export interface UserProfile {
     avatarUrl?: string; // URL to Firebase Storage or Google Photo
     createdAt?: any;
     credits?: {
-        paid?: number; // Global paid credits for all tools
-        secure?: {
-            free: number;
-            lastReset: string;
-        };
-        unlock?: {
-            free: number;
-            lastReset: string;
-        };
+        paid?: number;
+        free?: number;      // Unified free credits
+        lastReset?: string; // Unified reset timer
     };
 }
 

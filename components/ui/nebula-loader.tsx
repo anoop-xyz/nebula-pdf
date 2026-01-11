@@ -1,21 +1,57 @@
 import React from "react";
 
-export function NebulaLoader() {
+interface NebulaLoaderProps {
+    progress?: number;
+}
+
+export function NebulaLoader({ progress }: NebulaLoaderProps) {
+    // calculate stroke offset for progress (circumference = 2 * pi * r)
+    // Radius 28 (inner) -> C ≈ 175.9
+    const radius = 32;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = progress !== undefined
+        ? circumference - (progress / 100) * circumference
+        : circumference;
+
     return (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md transition-all duration-500">
-            <div className="relative w-20 h-20">
-                {/* Outer Glowing Ring */}
-                <div className="absolute inset-0 rounded-full border-4 border-slate-800/50"></div>
-                <div className="absolute inset-0 rounded-full border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent animate-spin shadow-[0_0_20px_rgba(56,189,248,0.4)]"></div>
+            <div className="relative w-24 h-24 flex items-center justify-center">
+                {/* SVG Container */}
+                <svg className="absolute inset-0 w-full h-full rotate-[-90deg]" viewBox="0 0 80 80">
+                    {/* Background Track (Blue Ring Base) */}
+                    <circle
+                        cx="40"
+                        cy="40"
+                        r={radius}
+                        fill="none"
+                        stroke="#1e293b" // slate-800
+                        strokeWidth="6"
+                    />
 
-                {/* Middle Orbit */}
-                <div className="absolute inset-3 rounded-full border-2 border-slate-700/30"></div>
-                <div className="absolute inset-3 rounded-full border-2 border-b-purple-500 border-t-transparent border-l-transparent border-r-transparent animate-spin-reverse opacity-70"></div>
+                    {/* Blue Progress Ring */}
+                    {progress !== undefined && (
+                        <circle
+                            cx="40"
+                            cy="40"
+                            r={radius}
+                            fill="none"
+                            stroke="#3b82f6" // blue-500
+                            strokeWidth="6"
+                            strokeLinecap="round"
+                            style={{
+                                strokeDasharray: circumference,
+                                strokeDashoffset,
+                                transition: "stroke-dashoffset 0.5s ease-in-out"
+                            }}
+                        />
+                    )}
+                </svg>
 
-                {/* Inner Core */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-4 h-4 bg-white rounded-full animate-pulse shadow-[0_0_15px_rgba(255,255,255,0.8)]"></div>
-                </div>
+                {/* Purple Spinner (Independent CSS Animation) */}
+                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-500/70 border-r-purple-500/30 animate-spin"></div>
+
+                {/* Inner Pulsing Core */}
+                <div className="w-4 h-4 bg-white rounded-full animate-pulse shadow-[0_0_15px_rgba(255,255,255,0.8)] z-10"></div>
             </div>
 
             {/* Text Label */}

@@ -13,7 +13,7 @@ export default function WatermarkPage() {
     const [color, setColor] = useState("#FF0000");
     const [opacity, setOpacity] = useState(0.5);
 
-    const { watermarkPDF, isProcessing } = usePDF();
+    const { watermarkPDF, isProcessing, progress } = usePDF();
 
     const handleFilesSelected = (files: File[]) => {
         if (files.length > 0) {
@@ -31,6 +31,7 @@ export default function WatermarkPage() {
             title="Watermark PDF"
             description="Add text watermarks to your PDF documents."
             isLoading={isProcessing}
+            progress={progress}
         >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
                 <div className="space-y-6">

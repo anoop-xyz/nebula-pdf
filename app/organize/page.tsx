@@ -28,7 +28,7 @@ export default function OrganizePage() {
     const [pageToDelete, setPageToDelete] = useState<string | null>(null);
     const [dontAskAgain, setDontAskAgain] = useState(false);
 
-    const { reorderPDF, isProcessing } = usePDF();
+    const { reorderPDF, isProcessing, progress } = usePDF();
 
     const handleFilesSelected = async (files: File[]) => {
         if (files.length > 0) {
@@ -138,6 +138,7 @@ export default function OrganizePage() {
             title="Organize PDF"
             description="Drag and drop to reorder pages, or rotate them individually."
             isLoading={isProcessing || isLoading}
+            progress={progress}
         >
             {!file ? (
                 <div className="h-full flex flex-col items-center justify-center">

@@ -44,6 +44,7 @@ export function ToolCard({ tool }: { tool: Tool }) {
 
     if (tool.href === "/secure") toolType = "secure";
     if (tool.href === "/unlock") toolType = "unlock";
+    if (tool.href === "/compress") toolType = "compress";
 
     if (toolType) {
         const credits = getCredits(toolType);

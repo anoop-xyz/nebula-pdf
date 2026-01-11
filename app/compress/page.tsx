@@ -5,11 +5,30 @@ import { ToolLayout } from "@/components/layout/tool-layout";
 import { FileUpload } from "@/components/ui/file-upload";
 import { MagneticButton } from "@/components/ui/magnetic-button";
 import { usePDF } from "@/hooks/use-pdf";
-import { FileText, Minimize2 } from "lucide-react";
+import { FileText, Minimize2, Settings2 } from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
+import { useAuth } from "@/components/auth/auth-provider";
+import { AuthModal } from "@/components/auth/auth-modal";
+import { useCredits } from "@/hooks/use-credits";
+import { CreditPurchaseModal } from "@/components/payment/credit-purchase-modal";
 
 export default function CompressPage() {
     const [file, setFile] = useState<File | null>(null);
-    const { compressPDF, isProcessing } = usePDF();
+    const { compressPDF, isProcessing, progress } = usePDF();
+    const [compressionLevel, setCompressionLevel] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
+
+    // Auth & Credits
+    const { user } = useAuth();
+    const { deductCredit } = useCredits();
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [showCreditModal, setShowCreditModal] = useState(false);
 
     const handleFilesSelected = (files: File[]) => {
         if (files.length > 0) {
@@ -19,7 +38,21 @@ export default function CompressPage() {
 
     const handleCompress = async () => {
         if (!file) return;
-        await compressPDF(file, 0.5); // Quality param is placeholder for now
+
+        // 1. Check Auth
+        if (!user) {
+            setShowAuthModal(true);
+            return;
+        }
+
+        // 2. Check & Deduct Credits
+        const hasCredit = await deductCredit('compress');
+        if (!hasCredit) {
+            setShowCreditModal(true);
+            return;
+        }
+
+        await compressPDF(file, compressionLevel);
     };
 
     return (
@@ -27,6 +60,7 @@ export default function CompressPage() {
             title="Compress PDF"
             description="Reduce the file size of your PDF documents."
             isLoading={isProcessing}
+            progress={progress}
         >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
                 <div className="space-y-6">
@@ -57,6 +91,32 @@ export default function CompressPage() {
                             </button>
                         </div>
                     )}
+
+                    {file && (
+                        <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700 space-y-3">
+                            <div className="flex items-center gap-2 text-slate-200 font-medium">
+                                <Settings2 className="w-5 h-5 text-primary" />
+                                <span>Compression Level</span>
+                            </div>
+                            <Select
+                                value={compressionLevel}
+                                onValueChange={(val: 'LOW' | 'MEDIUM' | 'HIGH') => setCompressionLevel(val)}
+                            >
+                                <SelectTrigger className="w-full bg-slate-900 border-slate-700 text-slate-200">
+                                    <SelectValue placeholder="Select level" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-800 border-slate-700 text-slate-200">
+                                    <SelectItem value="LOW">Low (High Quality)</SelectItem>
+                                    <SelectItem value="MEDIUM">Medium (Balanced)</SelectItem>
+                                    <SelectItem value="HIGH">High (Max Compression)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-slate-500 ml-1">
+                                High compression may reduce image quality.
+                            </p>
+                        </div>
+                    )}
+
                 </div>
 
                 <div className="flex flex-col items-center justify-center border-l border-slate-800 pl-8 min-h-[300px]">
@@ -71,7 +131,7 @@ export default function CompressPage() {
                                 Ready to Compress?
                             </h3>
                             <p className="text-slate-400 text-sm mt-1">
-                                We'll remove metadata and optimize the structure.
+                                We'll optimize your document using Adobe's powerful engine.
                             </p>
                         </div>
 
@@ -85,6 +145,16 @@ export default function CompressPage() {
                     </div>
                 </div>
             </div>
-        </ToolLayout>
+
+
+            <AuthModal
+                isOpen={showAuthModal}
+                onClose={() => setShowAuthModal(false)}
+            />
+            <CreditPurchaseModal
+                isOpen={showCreditModal}
+                onClose={() => setShowCreditModal(false)}
+            />
+        </ToolLayout >
     );
 }

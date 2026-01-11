@@ -16,7 +16,7 @@ import { CreditPurchaseModal } from "@/components/payment/credit-purchase-modal"
 export default function UnlockPage() {
     const [file, setFile] = useState<File | null>(null);
     const [password, setPassword] = useState("");
-    const { unlockPDF, isProcessing, error } = usePDF();
+    const { unlockPDF, isProcessing, error, progress } = usePDF();
     const { user } = useAuth();
     const { getCredits, deductCredit } = useCredits();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -73,6 +73,7 @@ export default function UnlockPage() {
             title="Unlock PDF"
             description="Remove passwords and restrictions from your PDF files."
             isLoading={isProcessing}
+            progress={progress}
         >
             <div className="max-w-xl mx-auto space-y-8">
                 <FileUpload

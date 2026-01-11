@@ -9,7 +9,7 @@ import { Image as ImageIcon, FileArchive } from "lucide-react";
 
 export default function PdfToImagePage() {
     const [file, setFile] = useState<File | null>(null);
-    const { pdfToImages, isProcessing } = usePDF();
+    const { pdfToImages, isProcessing, progress } = usePDF();
 
     const handleFilesSelected = (files: File[]) => {
         if (files.length > 0) {
@@ -27,6 +27,7 @@ export default function PdfToImagePage() {
             title="PDF to Image"
             description="Convert each page of your PDF into high-quality images."
             isLoading={isProcessing}
+            progress={progress}
         >
             <div className="max-w-xl mx-auto space-y-8">
                 <FileUpload

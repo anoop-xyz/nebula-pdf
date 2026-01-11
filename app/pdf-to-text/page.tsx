@@ -12,7 +12,7 @@ export default function PdfToTextPage() {
     const [file, setFile] = useState<File | null>(null);
     const [text, setText] = useState<string>("");
     const [copied, setCopied] = useState(false);
-    const { pdfToText, isProcessing } = usePDF();
+    const { pdfToText, isProcessing, progress } = usePDF();
 
     const handleFilesSelected = async (files: File[]) => {
         if (files.length > 0) {
@@ -39,6 +39,7 @@ export default function PdfToTextPage() {
             title="PDF to Text"
             description="Extract all text content from your PDF document."
             isLoading={isProcessing}
+            progress={progress}
         >
             <div className="max-w-4xl mx-auto h-full flex flex-col gap-6">
                 {!file ? (

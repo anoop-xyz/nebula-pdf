@@ -18,7 +18,7 @@ export default function SecurePage() {
     const [file, setFile] = useState<File | null>(null);
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const { protectPDF, isProcessing } = usePDF();
+    const { protectPDF, isProcessing, progress } = usePDF();
     const { user } = useAuth();
     const { getCredits, deductCredit } = useCredits();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -73,6 +73,7 @@ export default function SecurePage() {
             title="Secure PDF"
             description="Encrypt your PDF with a password to prevent unauthorized access."
             isLoading={isProcessing}
+            progress={progress}
         >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
                 <div className="space-y-6">

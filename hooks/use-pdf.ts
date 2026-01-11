@@ -6,12 +6,27 @@ import { useAuth } from "@/components/auth/auth-provider";
 export function usePDF() {
     const { user } = useAuth();
     const [isProcessing, setIsProcessing] = useState(false);
+    const [progress, setProgress] = useState(0);
     const [error, setError] = useState<string | null>(null);
 
+    // Helper to simulate progress
+    const simulateProgress = () => {
+        setProgress(0);
+        const interval = setInterval(() => {
+            setProgress((prev) => {
+                if (prev >= 90) return prev;
+                return prev + 5;
+            });
+        }, 500);
+        return interval;
+    };
+
     const mergePDFs = async (files: File[], outputName = "merged.pdf") => {
+        let interval;
         try {
             setIsProcessing(true);
             setError(null);
+            interval = simulateProgress();
 
             const mergedPdf = await PDFDocument.create();
 
@@ -25,19 +40,24 @@ export function usePDF() {
             const pdfBytes = await mergedPdf.save();
             const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
 
+            setProgress(100);
             downloadBlob(blob, outputName);
         } catch (err) {
             console.error(err);
             setError("Failed to merge PDFs.");
         } finally {
+            clearInterval(interval);
             setIsProcessing(false);
+            setTimeout(() => setProgress(0), 1000);
         }
     };
 
     const imagesToPDF = async (files: File[], outputName = "images.pdf") => {
+        let interval;
         try {
             setIsProcessing(true);
             setError(null);
+            interval = simulateProgress();
 
             const pdfDoc = await PDFDocument.create();
 
@@ -64,19 +84,25 @@ export function usePDF() {
 
             const pdfBytes = await pdfDoc.save();
             const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
+
+            setProgress(100);
             downloadBlob(blob, outputName);
         } catch (err) {
             console.error(err);
             setError("Failed to convert images to PDF.");
         } finally {
+            clearInterval(interval);
             setIsProcessing(false);
+            setTimeout(() => setProgress(0), 1000);
         }
     };
 
     const pdfToImages = async (file: File, outputName = "images.zip") => {
+        let interval;
         try {
             setIsProcessing(true);
             setError(null);
+            interval = simulateProgress();
 
             const JSZip = (await import("jszip")).default;
             const zip = new JSZip();
@@ -113,19 +139,24 @@ export function usePDF() {
             }
 
             const content = await zip.generateAsync({ type: "blob" });
+            setProgress(100);
             downloadBlob(content, outputName);
         } catch (err) {
             console.error(err);
             setError("Failed to convert PDF to images.");
         } finally {
+            clearInterval(interval);
             setIsProcessing(false);
+            setTimeout(() => setProgress(0), 1000);
         }
     };
 
     const pdfToText = async (file: File) => {
+        let interval;
         try {
             setIsProcessing(true);
             setError(null);
+            interval = simulateProgress();
 
             const pdfjsModule = await import("pdfjs-dist");
             // @ts-ignore
@@ -149,13 +180,16 @@ export function usePDF() {
                 fullText += `--- Page ${i} ---\n\n${pageText}\n\n`;
             }
 
+            setProgress(100);
             return fullText;
         } catch (err) {
             console.error(err);
             setError("Failed to extract text from PDF.");
             return "";
         } finally {
+            clearInterval(interval);
             setIsProcessing(false);
+            setTimeout(() => setProgress(0), 1000);
         }
     };
 
@@ -164,9 +198,11 @@ export function usePDF() {
         signatureDataUrl: string,
         signatures: { pageIndex: number; x: number; y: number; width: number; height: number }[]
     ) => {
+        let interval;
         try {
             setIsProcessing(true);
             setError(null);
+            interval = simulateProgress();
 
             const fileBuffer = await readFileAsArrayBuffer(file);
             const pdfDoc = await PDFDocument.load(fileBuffer);
@@ -192,19 +228,24 @@ export function usePDF() {
             const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
             const signedName = `signed_${file.name}`;
 
+            setProgress(100);
             downloadBlob(blob, signedName);
         } catch (err) {
             console.error(err);
             setError("Failed to sign PDF.");
         } finally {
+            clearInterval(interval);
             setIsProcessing(false);
+            setTimeout(() => setProgress(0), 1000);
         }
     };
 
     const rotatePDF = async (file: File, rotation: 90 | 180 | 270, outputName = "rotated.pdf") => {
+        let interval;
         try {
             setIsProcessing(true);
             setError(null);
+            interval = simulateProgress();
 
             const fileBuffer = await readFileAsArrayBuffer(file);
             const pdfDoc = await PDFDocument.load(fileBuffer);
@@ -217,19 +258,25 @@ export function usePDF() {
 
             const pdfBytes = await pdfDoc.save();
             const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
+
+            setProgress(100);
             downloadBlob(blob, outputName);
         } catch (err) {
             console.error(err);
             setError("Failed to rotate PDF.");
         } finally {
+            clearInterval(interval);
             setIsProcessing(false);
+            setTimeout(() => setProgress(0), 1000);
         }
     };
 
     const protectPDF = async (file: File, password: string): Promise<boolean> => {
+        let interval;
         try {
             setIsProcessing(true);
             setError(null);
+            interval = simulateProgress();
 
             const formData = new FormData();
             formData.append('file', file);
@@ -256,6 +303,8 @@ export function usePDF() {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
+
+            setProgress(100);
             return true;
 
         } catch (err: any) {
@@ -265,106 +314,46 @@ export function usePDF() {
             // alert(`Encryption Failed: ${errorMessage}`); // Removed alert in favor of toast in UI
             return false;
         } finally {
+            clearInterval(interval);
             setIsProcessing(false);
+            setTimeout(() => setProgress(0), 1000);
         }
     };
 
-    const compressPDF = async (file: File, quality: number, outputName = "compressed.pdf") => {
+    const compressPDF = async (file: File, compressionLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'MEDIUM') => {
+        let interval;
         try {
             setIsProcessing(true);
             setError(null);
+            interval = simulateProgress();
 
-            // Dynamically import pdfjs-dist
-            const pdfjsModule = await import("pdfjs-dist");
-            // @ts-ignore
-            const pdfjsLib = pdfjsModule.default || pdfjsModule;
-            if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-                pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('compressionLevel', compressionLevel);
+
+            const response = await fetch('/api/compress-pdf', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `Server Error: ${response.status}`);
             }
 
-            const fileBuffer = await readFileAsArrayBuffer(file);
-            const pdf = await pdfjsLib.getDocument(fileBuffer).promise;
-            const numPages = pdf.numPages;
+            setProgress(100);
 
-            // Strategy: Try progressively lower quality settings until size decreases
-            const compressionLevels = [
-                { scale: 1.0, quality: 0.7 }, // Standard
-                { scale: 0.9, quality: 0.5 }, // Medium
-                { scale: 0.7, quality: 0.4 }, // Aggressive
-                { scale: 0.5, quality: 0.3 }  // Maximum
-            ];
+            const blob = await response.blob();
+            downloadBlob(blob, `compressed_${file.name}`);
 
-            let bestBlob: Blob | null = null;
-            let originalSize = file.size;
-
-            for (const level of compressionLevels) {
-                const newPdfDoc = await PDFDocument.create();
-
-                for (let i = 1; i <= numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const viewport = page.getViewport({ scale: level.scale });
-                    const canvas = document.createElement("canvas");
-                    const context = canvas.getContext("2d");
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-
-                    if (context) {
-                        await page.render({ canvasContext: context, viewport } as any).promise;
-                        const imgDataUrl = canvas.toDataURL("image/jpeg", level.quality);
-                        const imgBuffer = await fetch(imgDataUrl).then(res => res.arrayBuffer());
-
-                        const embeddedImage = await newPdfDoc.embedJpg(imgBuffer);
-                        const newPage = newPdfDoc.addPage([viewport.width, viewport.height]);
-                        newPage.drawImage(embeddedImage, {
-                            x: 0,
-                            y: 0,
-                            width: viewport.width,
-                            height: viewport.height,
-                        });
-                    }
-                }
-
-                const pdfBytes = await newPdfDoc.save();
-                const currentBlob = new Blob([pdfBytes as any], { type: "application/pdf" });
-
-                if (currentBlob.size < originalSize) {
-                    bestBlob = currentBlob;
-                    break; // Found a smaller size, stop here
-                }
-
-                // Keep the "best" so far (smallest output) just in case we never beat original
-                if (!bestBlob || currentBlob.size < bestBlob.size) {
-                    bestBlob = currentBlob;
-                }
-            }
-
-            // If even the most aggressive compression is larger (rare for text-heavy -> image), 
-            // the user requested "anyhow compress", but returning a LARGER file is technically a failure of "compress".
-            // However, we will return the best effort (smallest generated). 
-            // If the best effort is STILL larger than original, we'll return original to protect user storage,
-            // unless the user strictly implies they want the image-converted version regardless.
-            // Safe bet: If generated > original, return original with warning (but user said "don't show message").
-            // User said: "just somehow compress... anyhow" 
-            // We'll return the smallest blob we found, even if it's the aggressively downscaled one.
-
-            if (bestBlob && bestBlob.size < originalSize) {
-                downloadBlob(bestBlob, outputName);
-            } else {
-                // Fallback: If we couldn't make it smaller, return the most aggressive attempt 
-                // OR allow the original if it's truly uncompressible (optimized).
-                // Given user instruction, we try to give them *result*.
-                if (bestBlob) {
-                    downloadBlob(bestBlob, outputName); // Give them the result even if margin is small
-                } else {
-                    downloadBlob(new Blob([fileBuffer]), outputName); // Fail safe
-                }
-            }
-
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError("Failed to compress PDF.");
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+            setError(errorMessage);
         } finally {
+            clearInterval(interval);
             setIsProcessing(false);
+            setTimeout(() => setProgress(0), 1000);
         }
     };
 
@@ -374,9 +363,11 @@ export function usePDF() {
         rotationMap: Record<number, number> = {},
         outputName = "organized.pdf"
     ) => {
+        let interval;
         try {
             setIsProcessing(true);
             setError(null);
+            interval = simulateProgress();
 
             const fileBuffer = await readFileAsArrayBuffer(file);
             const pdfDoc = await PDFDocument.load(fileBuffer);
@@ -395,12 +386,16 @@ export function usePDF() {
 
             const pdfBytes = await newPdf.save();
             const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
+
+            setProgress(100);
             downloadBlob(blob, outputName);
         } catch (err) {
             console.error(err);
             setError("Failed to reorder PDF.");
         } finally {
+            clearInterval(interval);
             setIsProcessing(false);
+            setTimeout(() => setProgress(0), 1000);
         }
     };
 
@@ -409,9 +404,11 @@ export function usePDF() {
         pageIndices: number[], // 0-based indices
         outputName = "split.pdf"
     ) => {
+        let interval;
         try {
             setIsProcessing(true);
             setError(null);
+            interval = simulateProgress();
 
             const fileBuffer = await readFileAsArrayBuffer(file);
             const pdfDoc = await PDFDocument.load(fileBuffer);
@@ -422,12 +419,16 @@ export function usePDF() {
 
             const pdfBytes = await newPdf.save();
             const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
+
+            setProgress(100);
             downloadBlob(blob, outputName);
         } catch (err) {
             console.error(err);
             setError("Failed to split PDF.");
         } finally {
+            clearInterval(interval);
             setIsProcessing(false);
+            setTimeout(() => setProgress(0), 1000);
         }
     };
 
@@ -438,9 +439,11 @@ export function usePDF() {
         opacity: number = 0.5,
         outputName = "watermarked.pdf"
     ) => {
+        let interval;
         try {
             setIsProcessing(true);
             setError(null);
+            interval = simulateProgress();
 
             const fileBuffer = await readFileAsArrayBuffer(file);
             const pdfDoc = await PDFDocument.load(fileBuffer);
@@ -479,19 +482,25 @@ export function usePDF() {
 
             const pdfBytes = await pdfDoc.save();
             const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
+
+            setProgress(100);
             downloadBlob(blob, outputName);
         } catch (err) {
             console.error(err);
             setError("Failed to watermark PDF.");
         } finally {
+            clearInterval(interval);
             setIsProcessing(false);
+            setTimeout(() => setProgress(0), 1000);
         }
     };
 
     const unlockPDF = async (file: File, password: string): Promise<boolean> => {
+        let interval;
         try {
             setIsProcessing(true);
             setError(null);
+            interval = simulateProgress();
 
             const formData = new FormData();
             formData.append('file', file);
@@ -510,6 +519,8 @@ export function usePDF() {
             const blob = await response.blob();
             const unlockedName = `unlocked_${file.name}`;
             downloadBlob(blob, unlockedName);
+
+            setProgress(100);
             return true;
         } catch (err: any) {
             console.error("Unlock Error:", err);
@@ -517,7 +528,9 @@ export function usePDF() {
             setError(errorMessage);
             return false;
         } finally {
+            clearInterval(interval);
             setIsProcessing(false);
+            setTimeout(() => setProgress(0), 1000);
         }
     };
 
@@ -525,9 +538,11 @@ export function usePDF() {
         file: File,
         position: 'bottom-center' | 'bottom-right' | 'bottom-left' = 'bottom-center'
     ) => {
+        let interval;
         try {
             setIsProcessing(true);
             setError(null);
+            interval = simulateProgress();
 
             const fileBuffer = await readFileAsArrayBuffer(file);
             const pdfDoc = await PDFDocument.load(fileBuffer);
@@ -560,12 +575,16 @@ export function usePDF() {
             const pdfBytes = await pdfDoc.save();
             const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
             const numberedName = `numbered_${file.name}`;
+
+            setProgress(100);
             downloadBlob(blob, numberedName);
         } catch (err) {
             console.error(err);
             setError("Failed to add page numbers.");
         } finally {
+            clearInterval(interval);
             setIsProcessing(false);
+            setTimeout(() => setProgress(0), 1000);
         }
     };
 
@@ -584,6 +603,7 @@ export function usePDF() {
         reorderPDF,
         watermarkPDF,
         isProcessing,
+        progress,
         error,
     };
 }
