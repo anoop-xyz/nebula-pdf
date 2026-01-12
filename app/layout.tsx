@@ -22,6 +22,9 @@ export const metadata: Metadata = {
     default: "Nebula PDF | Next-Gen Online PDF Tools",
     template: "%s | Nebula PDF",
   },
+  alternates: {
+    canonical: 'https://nebulapdf.online',
+  },
   description: "Free, secure, and fast online PDF tools. Merge, Compress, Split, Convert, Sign, and Edit PDFs directly in your browser with zero data uploads.",
   keywords: [
     "PDF tools", "merge PDF", "compress PDF", "split PDF", "convert PDF",
