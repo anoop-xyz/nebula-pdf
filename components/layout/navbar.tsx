@@ -243,6 +243,18 @@ export function Navbar() {
                                                 <p className="text-xs text-slate-500">{user.email}</p>
                                             </div>
                                         </div>
+
+                                        <button
+                                            onClick={() => {
+                                                setIsMobileMenuOpen(false);
+                                                setIsPurchaseModalOpen(true);
+                                            }}
+                                            className="w-full flex items-center space-x-2 px-2 py-2 text-purple-400 hover:bg-white/5 rounded-lg transition-colors"
+                                        >
+                                            <Coins className="w-4 h-4" />
+                                            <span>Get Credits</span>
+                                        </button>
+
                                         <button
                                             onClick={handleSignOut}
                                             className="w-full flex items-center space-x-2 px-2 py-2 text-red-400 hover:bg-white/5 rounded-lg transition-colors"
