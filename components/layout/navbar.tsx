@@ -256,6 +256,17 @@ export function Navbar() {
                                         </button>
 
                                         <button
+                                            onClick={() => {
+                                                setIsMobileMenuOpen(false);
+                                                setIsCreditsModalOpen(true);
+                                            }}
+                                            className="w-full flex items-center space-x-2 px-2 py-2 text-indigo-400 hover:bg-white/5 rounded-lg transition-colors"
+                                        >
+                                            <Clock className="w-4 h-4" />
+                                            <span>My Credits</span>
+                                        </button>
+
+                                        <button
                                             onClick={handleSignOut}
                                             className="w-full flex items-center space-x-2 px-2 py-2 text-red-400 hover:bg-white/5 rounded-lg transition-colors"
                                         >

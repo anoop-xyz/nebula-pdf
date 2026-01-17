@@ -14,7 +14,7 @@ interface ToolLayoutProps {
 
 export function ToolLayout({ title, description, children, isLoading = false, progress }: ToolLayoutProps) {
     return (
-        <div className="min-h-screen p-6 md:p-12 flex flex-col relative">
+        <div className="min-h-screen p-6 md:p-12 pt-24 md:pt-28 flex flex-col relative">
             <AnimatePresence>
                 {isLoading && (
                     <motion.div
