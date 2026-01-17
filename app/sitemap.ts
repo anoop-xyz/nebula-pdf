@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-    const baseUrl = 'https://nebulapdf.online'
+    const baseUrl = 'https://www.nebulapdf.online'
 
     // Core Tools
     const routes = [

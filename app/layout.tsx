@@ -17,13 +17,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://nebulapdf.online'),
+  metadataBase: new URL('https://www.nebulapdf.online'),
   title: {
     default: "Nebula PDF | Next-Gen Online PDF Tools",
     template: "%s | Nebula PDF",
   },
   alternates: {
-    canonical: 'https://nebulapdf.online',
+    canonical: 'https://www.nebulapdf.online',
   },
   description: "Free, secure, and fast online PDF tools. Merge, Compress, Split, Convert, Sign, and Edit PDFs directly in your browser with zero data uploads.",
   keywords: [
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://nebulapdf.online",
+    url: "https://www.nebulapdf.online",
     title: "Nebula PDF | The Future of PDF Editing",
     description: "Experience the fastest, most secure PDF tools on the web. No uploads required for most operations.",
     siteName: "Nebula PDF",
