@@ -48,6 +48,10 @@ export function CreditPurchaseModal({ isOpen, onClose }: CreditPurchaseModalProp
 
     const loadRazorpayScript = () => {
         return new Promise((resolve) => {
+            if (typeof window !== 'undefined' && (window as any).Razorpay) {
+                resolve(true);
+                return;
+            }
             const script = document.createElement("script");
             script.src = "https://checkout.razorpay.com/v1/checkout.js";
             script.onload = () => resolve(true);
@@ -69,18 +73,29 @@ export function CreditPurchaseModal({ isOpen, onClose }: CreditPurchaseModalProp
             const res = await loadRazorpayScript();
             if (!res) {
                 toast.error("Failed to load payment gateway. Check connection.");
+                setLoadingPlan(null);
                 return;
             }
 
-            // 2. Create Order
-            const orderRes = await fetch("/api/create-order", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ amount: plan.price }),
-            });
-            const orderJson = await orderRes.json();
-
-            if (orderJson.error) throw new Error(orderJson.error);
+            // 2. Create Order with Retry Logic
+            let orderJson;
+            let retries = 3;
+            while (retries > 0) {
+                try {
+                    const orderRes = await fetch("/api/create-order", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ amount: plan.price }),
+                    });
+                    orderJson = await orderRes.json();
+                    if (orderJson.error) throw new Error(orderJson.error);
+                    break; // Success
+                } catch (e) {
+                    retries--;
+                    if (retries === 0) throw e;
+                    await new Promise(r => setTimeout(r, 1000)); // Wait 1s
+                }
+            }
 
             const options = {
                 key: orderJson.keyId,
@@ -105,19 +120,20 @@ export function CreditPurchaseModal({ isOpen, onClose }: CreditPurchaseModalProp
                         const verifyJson = await verifyRes.json();
                         if (!verifyJson.success) throw new Error("Verification Failed");
 
-                        // 4. Update Firestore (Client Side Update)
-                        // Note: Ideally done via Webhook/Admin SDK for absolute security.
+                        // 4. Update Firestore
                         const userRef = doc(db, 'users', user.uid);
                         await updateDoc(userRef, {
                             "credits.paid": increment(plan.credits)
                         });
 
                         toast.success("Payment Successful! Credits added.");
+                        setLoadingPlan(null); // Clear loading state
                         onClose();
 
                     } catch (err) {
                         console.error(err);
-                        toast.error("Payment verification failed. Contact support.");
+                        toast.error("Payment verification failed. Please contact support.");
+                        setLoadingPlan(null); // Clear loading state
                     }
                 },
                 prefill: {
@@ -125,19 +141,31 @@ export function CreditPurchaseModal({ isOpen, onClose }: CreditPurchaseModalProp
                     email: user.email || "",
                 },
                 theme: {
-                    color: "#a855f7", // Purple-500
+                    color: "#a855f7",
                 },
+                modal: {
+                    ondismiss: function () {
+                        setLoadingPlan(null);
+                    }
+                }
             };
 
             const rzp1 = new (window as any).Razorpay(options);
+
+            // Explicit error handling for instance creation
+            rzp1.on('payment.failed', function (response: any) {
+                toast.error(`Payment Failed: ${response.error.description}`);
+                setLoadingPlan(null);
+            });
+
             rzp1.open();
 
         } catch (error) {
             console.error("Payment Error:", error);
-            toast.error("Something went wrong initializing payment.");
-        } finally {
+            toast.error("Could not initiate payment. Please try again.");
             setLoadingPlan(null);
         }
+        // Note: loadingPlan is cleared in ondismiss or failure handler to keep spinner while modal opens
     };
 
     return (
@@ -156,10 +184,18 @@ export function CreditPurchaseModal({ isOpen, onClose }: CreditPurchaseModalProp
                     {PLANS.map((plan) => (
                         <div
                             key={plan.id}
+                            role="button"
+                            tabIndex={0}
                             className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer hover:bg-slate-900 group
                                 ${plan.popular ? 'border-purple-500/50 bg-slate-900/40' : 'border-slate-800 bg-slate-900/20'}
                             `}
                             onClick={() => !loadingPlan && handlePurchase(plan)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    !loadingPlan && handlePurchase(plan);
+                                }
+                            }}
                         >
                             {plan.popular && (
                                 <div className="absolute -top-3 right-4 bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-lg shadow-purple-500/20">
