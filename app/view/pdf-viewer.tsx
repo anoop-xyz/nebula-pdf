@@ -769,7 +769,7 @@ function SidebarThumbnail({ pageNum, pdfDoc, isCurrent, onSelect }: SidebarThumb
 
     return (
         <div ref={containerRef as any} onClick={onSelect} className={cn("p-2 rounded-lg cursor-pointer transition-colors border min-h-[100px]", isCurrent ? "bg-purple-500/20 border-purple-500" : "hover:bg-slate-800 border-transparent")}>
-            <canvas ref={canvasRef} className="mx-auto rounded border border-slate-700 bg-white" />
+            <canvas ref={canvasRef} className="mx-auto rounded border border-slate-700 bg-white max-w-full h-auto" />
             <div className="text-center text-xs text-slate-400 mt-1">Page {pageNum}</div>
         </div>
     );
