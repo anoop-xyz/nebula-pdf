@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export const policyConfig = {
     companyName: "Nebula PDF",
     contactEmail: "therealanoopkumar@gmail.com",
-    address: "Papireddynagar, near Assbestas Colony, Jagathgirigutta and Balanagar",
+    address: "Kompally",
 };
 
 export default function PolicyLayout({ title, children }: { title: string, children: React.ReactNode }) {
