@@ -50,8 +50,8 @@ export async function POST(req: NextRequest) {
 
         console.log(`3. CSS Compressing (Level: ${compressionLevel})...`);
 
-        // Use standard optimization endpoint
-        const compressResponse = await fetch('https://api.pdf.co/v1/pdf/optimize', {
+        // Use v2 compression endpoint as requested
+        const compressResponse = await fetch('https://api.pdf.co/v2/pdf/compress', {
             method: 'POST',
             headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
             body: JSON.stringify({

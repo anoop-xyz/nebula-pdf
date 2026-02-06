@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_KEY = 'anoop032006@gmail.com_jufjkDtsJHHoXJviLcCsZb0qHxpQfb1w8EErSV5UQy2yEyVBhA9VQL9aAmvFCHm9';
+const API_KEY = process.env.PDF_CO_API_KEY;
 
 export async function POST(req: NextRequest) {
     try {
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
         // STEP 1: UPLOAD TO TEMP STORAGE
         const uploadResponse = await fetch('https://api.pdf.co/v1/file/upload/base64', {
             method: 'POST',
-            headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
+            headers: { 'x-api-key': API_KEY as string, 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 file: base64Content,
                 name: file.name
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         // STEP 2: APPLY SECURITY
         const processResponse = await fetch('https://api.pdf.co/v1/pdf/security/add', {
             method: 'POST',
-            headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
+            headers: { 'x-api-key': API_KEY as string, 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 url: tempFileUrl, // Using the URL we just got
                 ownerPassword: password,
