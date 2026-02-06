@@ -6,6 +6,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { OnboardingModal } from "@/components/auth/onboarding-modal";
 import { Footer } from "@/components/layout/footer";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -114,6 +115,7 @@ export default function RootLayout({
             {children}
           </MouseProvider>
           <Footer />
+          <Toaster />
         </AuthProvider>
       </body>
     </html>

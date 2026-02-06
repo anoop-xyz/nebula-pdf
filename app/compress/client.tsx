@@ -75,7 +75,11 @@ export default function CompressPage() {
         } else {
             // Error handling
             if (error) {
-                toast.error(error);
+                if (error.includes("PDF_ALREADY_COMPRESSED")) {
+                    toast.info("This PDF is already compressed to the maximum extent.");
+                } else {
+                    toast.error(error);
+                }
             }
         }
     };
