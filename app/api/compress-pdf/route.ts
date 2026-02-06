@@ -25,20 +25,26 @@ export async function POST(req: NextRequest) {
         }
 
         // 1. Prepare Credentials
-        const credentialsFilePath = path.join(process.cwd(), 'pdfservices-api-credentials.json');
-
         let credentials;
         try {
-            // Read the file manually to ensure we can parse it, or pass path to SDK
-            // The SDK usually takes the client_id/secret directly or a file path.
-            // Let's rely on the SDK's file builder if possible, strictly following typical patterns.
-            // Updating to use ServicePrincipalCredentials directly with the config object if file issues arise,
-            // but file is standard.
-            const credsConfig = JSON.parse(fs.readFileSync(credentialsFilePath, 'utf-8'));
-            credentials = new ServicePrincipalCredentials({
-                clientId: credsConfig.client_credentials.client_id,
-                clientSecret: credsConfig.client_credentials.client_secret
-            });
+            const clientId = process.env.PDF_SERVICES_CLIENT_ID;
+            const clientSecret = process.env.PDF_SERVICES_CLIENT_SECRET;
+
+            if (clientId && clientSecret) {
+                console.log("Using Adobe Credentials from Environment Variables");
+                credentials = new ServicePrincipalCredentials({
+                    clientId,
+                    clientSecret
+                });
+            } else {
+                console.log("Using Adobe Credentials from File");
+                const credentialsFilePath = path.join(process.cwd(), 'pdfservices-api-credentials.json');
+                const credsConfig = JSON.parse(fs.readFileSync(credentialsFilePath, 'utf-8'));
+                credentials = new ServicePrincipalCredentials({
+                    clientId: credsConfig.client_credentials.client_id,
+                    clientSecret: credsConfig.client_credentials.client_secret
+                });
+            }
         } catch (e) {
             console.error("Credential Load Error:", e);
             return NextResponse.json({ error: 'Failed to load Adobe credentials' }, { status: 500 });

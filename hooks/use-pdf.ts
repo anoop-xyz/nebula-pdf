@@ -320,7 +320,7 @@ export function usePDF() {
         }
     };
 
-    const compressPDF = async (file: File, compressionLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'MEDIUM') => {
+    const compressPDF = async (file: File, compressionLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'MEDIUM'): Promise<boolean> => {
         let interval;
         try {
             setIsProcessing(true);
@@ -345,11 +345,13 @@ export function usePDF() {
 
             const blob = await response.blob();
             downloadBlob(blob, `compressed_${file.name}`);
+            return true;
 
         } catch (err: any) {
             console.error(err);
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
             setError(errorMessage);
+            return false;
         } finally {
             clearInterval(interval);
             setIsProcessing(false);
