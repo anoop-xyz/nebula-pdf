@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-    PDFServices,
-    ServicePrincipalCredentials,
-    MimeType,
-    CompressPDFJob,
-    CompressPDFParams,
-    CompressPDFResult,
-    SDKError,
-    ServiceUsageError,
-    ServiceApiError
-} from '@adobe/pdfservices-node-sdk';
-import fs from 'fs';
-import path from 'path';
-import { Readable } from 'stream';
+
+const API_KEY = process.env.PDF_CO_API_KEY;
 
 export async function POST(req: NextRequest) {
     try {
@@ -24,97 +12,70 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Missing file' }, { status: 400 });
         }
 
-        // 1. Prepare Credentials
-        let credentials;
-        try {
-            const clientId = process.env.PDF_SERVICES_CLIENT_ID;
-            const clientSecret = process.env.PDF_SERVICES_CLIENT_SECRET;
-
-            if (clientId && clientSecret) {
-                console.log("Using Adobe Credentials from Environment Variables");
-                credentials = new ServicePrincipalCredentials({
-                    clientId,
-                    clientSecret
-                });
-            } else {
-                console.log("Using Adobe Credentials from File");
-                const credentialsFilePath = path.join(process.cwd(), 'pdfservices-api-credentials.json');
-                const credsConfig = JSON.parse(fs.readFileSync(credentialsFilePath, 'utf-8'));
-                credentials = new ServicePrincipalCredentials({
-                    clientId: credsConfig.client_credentials.client_id,
-                    clientSecret: credsConfig.client_credentials.client_secret
-                });
-            }
-        } catch (e) {
-            console.error("Credential Load Error:", e);
-            return NextResponse.json({ error: 'Failed to load Adobe credentials' }, { status: 500 });
+        if (!API_KEY) {
+            return NextResponse.json({ error: 'Server configuration error: Missing API Key' }, { status: 500 });
         }
 
-        const pdfServices = new PDFServices({ credentials });
-
-        // 2. Prepare Input Stream
+        // 1. Prepare Base64
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        const readStream = new Readable();
-        readStream.push(buffer);
-        readStream.push(null);
+        const base64Content = buffer.toString('base64');
 
-        const inputAsset = await pdfServices.upload({
-            readStream,
-            mimeType: MimeType.PDF
+        console.log("1. Uploading file to PDF.co for compression...");
+
+        // STEP 1: UPLOAD TO TEMP STORAGE
+        const uploadResponse = await fetch('https://api.pdf.co/v1/file/upload/base64', {
+            method: 'POST',
+            headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                file: base64Content,
+                name: file.name
+            })
         });
 
-        // 3. Configure Compression
-        // Note: Import CompressionLevel if available, or map to strings if allowed.
-        // The SDK defines CompressionLevel enum typically. 
-        // Assuming we need to import it or use string "LOW", "MEDIUM", "HIGH" if SDK supports it.
-        // Let's safe bet: use the params object but verify enum.
-
-        let level;
-        switch (compressionLevel.toUpperCase()) {
-            case 'LOW':
-                level = 'LOW';
-                break;
-            case 'HIGH':
-                level = 'HIGH';
-                break;
-            case 'MEDIUM':
-            default:
-                level = 'MEDIUM';
-                break;
+        if (!uploadResponse.ok) {
+            throw new Error(`Upload Failed: ${await uploadResponse.text()}`);
         }
 
-        const params = new CompressPDFParams({
-            compressionLevel: level as any
+        const uploadData = await uploadResponse.json();
+        if (uploadData.error) throw new Error(uploadData.message);
+
+        const tempFileUrl = uploadData.url;
+        console.log("2. File uploaded. Temp URL:", tempFileUrl);
+
+        // STEP 2: COMPRESS PDF
+        // PDF.co Compression Profile suggestions:
+        // We can use 'mode' or specific profiles. 
+        // For simplicity, we'll mapping our Levels to PDF.co logic or just use default optimized.
+
+        console.log(`3. CSS Compressing (Level: ${compressionLevel})...`);
+
+        const compressResponse = await fetch('https://api.pdf.co/v1/pdf/compress', {
+            method: 'POST',
+            headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: tempFileUrl,
+                name: `compressed_${file.name}`,
+                async: false
+            })
         });
 
-        // 4. Create and Submit Job
-        const job = new CompressPDFJob({ inputAsset, params });
-
-        console.log(`Submitting Adobe Compression Job (Level: ${compressionLevel})...`);
-        const pollingURL = await pdfServices.submit({ job });
-
-        // 5. Poll for Results
-        const pdfServicesResponse = await pdfServices.getJobResult({
-            pollingURL,
-            resultType: CompressPDFResult
-        });
-
-        if (!pdfServicesResponse.result) {
-            throw new Error("No result returned from Adobe PDF Services");
+        if (!compressResponse.ok) {
+            const errorText = await compressResponse.text();
+            throw new Error(`Compression Failed: ${errorText}`);
         }
 
-        const resultAsset = pdfServicesResponse.result.asset;
-        const streamAsset = await pdfServices.getContent({ asset: resultAsset });
+        const compressData = await compressResponse.json();
+        if (compressData.error) throw new Error(compressData.message);
 
-        // 6. Return Result
-        const chunks: Buffer[] = [];
-        for await (const chunk of streamAsset.readStream) {
-            chunks.push(Buffer.from(chunk));
-        }
-        const resultBuffer = Buffer.concat(chunks);
+        const finalUrl = compressData.url;
+        console.log("4. Compression result URL:", finalUrl);
 
-        return new NextResponse(resultBuffer, {
+        // STEP 3: DOWNLOAD & RETURN
+        const fileResponse = await fetch(finalUrl);
+        const resultBlob = await fileResponse.blob();
+
+        return new NextResponse(resultBlob, {
             status: 200,
             headers: {
                 'Content-Type': 'application/pdf',
@@ -123,17 +84,9 @@ export async function POST(req: NextRequest) {
         });
 
     } catch (error: any) {
-        console.error('ADOBE API ERROR:', error);
-
-        let errorMessage = 'Compression failed';
-        if (error instanceof SDKError || error instanceof ServiceUsageError || error instanceof ServiceApiError) {
-            errorMessage = `Adobe Service Error: ${error.message}`;
-        } else {
-            errorMessage = error.message;
-        }
-
+        console.error('PDF.CO API ERROR:', error);
         return NextResponse.json(
-            { error: errorMessage },
+            { error: error.message || 'Compression failed' },
             { status: 500 }
         );
     }
