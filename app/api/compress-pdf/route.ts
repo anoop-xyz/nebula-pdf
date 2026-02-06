@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import ILovePDFApi from '@ilovepdf/ilovepdf-nodejs';
+// @ts-ignore
+import ILovePDFFile from '@ilovepdf/ilovepdf-nodejs/ILovePDFFile';
 
-const API_KEY = process.env.PDF_CO_API_KEY;
+const PUBLIC_KEY = process.env.ILOVEPDF_PUBLIC_KEY;
+const SECRET_KEY = process.env.ILOVEPDF_SECRET_KEY;
 
 export async function POST(req: NextRequest) {
     try {
@@ -12,71 +16,59 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Missing file' }, { status: 400 });
         }
 
-        if (!API_KEY) {
-            return NextResponse.json({ error: 'Server configuration error: Missing API Key' }, { status: 500 });
+        if (!PUBLIC_KEY || !SECRET_KEY) {
+            return NextResponse.json({ error: 'Server configuration error: Missing iLovePDF Keys' }, { status: 500 });
         }
 
-        // 1. Prepare Base64
+        const instance = new ILovePDFApi(PUBLIC_KEY, SECRET_KEY);
+        const task = instance.newTask('compress');
+
+        await task.start();
+
+        // 1. Prepare Buffer & Temp File
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        const base64Content = buffer.toString('base64');
 
-        console.log("1. Uploading file to PDF.co for compression...");
+        // Use temp file to avoid TS issues with buffer upload
+        const fs = require('fs');
+        const path = require('path');
+        const os = require('os');
+        const tempFilePath = path.join(os.tmpdir(), `upload_${Date.now()}_${file.name}`);
+        fs.writeFileSync(tempFilePath, buffer);
 
-        // STEP 1: UPLOAD TO TEMP STORAGE
-        const uploadResponse = await fetch('https://api.pdf.co/v1/file/upload/base64', {
-            method: 'POST',
-            headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                file: base64Content,
-                name: file.name
-            })
-        });
-
-        if (!uploadResponse.ok) {
-            throw new Error(`Upload Failed: ${await uploadResponse.text()}`);
+        console.log("1. Add file to iLovePDF task...");
+        try {
+            await task.addFile(tempFilePath);
+        } finally {
+            // Cleanup temp file immediately after adding
+            fs.unlinkSync(tempFilePath);
         }
 
-        const uploadData = await uploadResponse.json();
-        if (uploadData.error) throw new Error(uploadData.message);
-
-        const tempFileUrl = uploadData.url;
-        console.log("2. File uploaded. Temp URL:", tempFileUrl);
-
-        // STEP 2: COMPRESS PDF
-        // PDF.co Compression Profile suggestions:
-        // We can use 'mode' or specific profiles. 
-        // For simplicity, we'll mapping our Levels to PDF.co logic or just use default optimized.
-
-        console.log(`3. CSS Compressing (Level: ${compressionLevel})...`);
-
-        // Use v2 compression endpoint as requested
-        const compressResponse = await fetch('https://api.pdf.co/v2/pdf/compress', {
-            method: 'POST',
-            headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                url: tempFileUrl,
-                name: `compressed_${file.name}`,
-                async: false
-            })
-        });
-
-        if (!compressResponse.ok) {
-            const errorText = await compressResponse.text();
-            throw new Error(`Compression Failed: ${errorText}`);
+        // Map levels:
+        // LOW -> minimal compression -> 'low'
+        // MEDIUM -> recommended -> 'recommended'
+        // HIGH -> extreme -> 'extreme'
+        let level = 'recommended';
+        switch (compressionLevel.toUpperCase()) {
+            case 'LOW':
+                level = 'low';
+                break;
+            case 'HIGH':
+                level = 'extreme';
+                break;
+            case 'MEDIUM':
+            default:
+                level = 'recommended';
+                break;
         }
 
-        const compressData = await compressResponse.json();
-        if (compressData.error) throw new Error(compressData.message);
+        console.log(`2. Processing (Level: ${level})...`);
+        await task.process({ compression_level: level });
 
-        const finalUrl = compressData.url;
-        console.log("4. Compression result URL:", finalUrl);
+        console.log("3. Downloading...");
+        const data = await task.download();
 
-        // STEP 3: DOWNLOAD & RETURN
-        const fileResponse = await fetch(finalUrl);
-        const resultBlob = await fileResponse.blob();
-
-        return new NextResponse(resultBlob, {
+        return new NextResponse(data, {
             status: 200,
             headers: {
                 'Content-Type': 'application/pdf',
@@ -85,7 +77,7 @@ export async function POST(req: NextRequest) {
         });
 
     } catch (error: any) {
-        console.error('PDF.CO API ERROR:', error);
+        console.error('ILovePDF API ERROR:', error);
         return NextResponse.json(
             { error: error.message || 'Compression failed' },
             { status: 500 }
