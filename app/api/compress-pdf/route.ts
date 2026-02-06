@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PUBLIC_KEY = process.env.ILOVEPDF_PUBLIC_KEY;
-const SECRET_KEY = process.env.ILOVEPDF_SECRET_KEY;
+// For App Router - increase timeout for large file processing
+export const maxDuration = 60; // 60 seconds
+
+const PUBLIC_KEY = process.env.ILovePDF_PUBLIC_KEY;
+const SECRET_KEY = process.env.ILovePDF_SECRET_KEY;
 
 export async function POST(req: NextRequest) {
     try {
