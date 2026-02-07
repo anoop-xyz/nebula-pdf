@@ -7,6 +7,7 @@ const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
 const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'nebula-pdf-uploads';
+const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL; // e.g., https://pub-xxxx.r2.dev
 
 // Initialize S3 client for R2
 const getR2Client = () => {
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
         const uploadUrl = await getSignedUrl(r2Client, command, { expiresIn: 600 });
 
         // Public URL for reading (R2 public access)
-        const publicUrl = `https://pub-${R2_ACCOUNT_ID}.r2.dev/${key}`;
+        const publicUrl = `${R2_PUBLIC_URL}/${key}`;
 
         return NextResponse.json({
             uploadUrl,    // URL to PUT the file
