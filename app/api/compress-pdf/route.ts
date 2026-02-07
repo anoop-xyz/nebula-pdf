@@ -8,12 +8,12 @@ const SECRET_KEY = process.env.ILovePDF_SECRET_KEY;
 
 export async function POST(req: NextRequest) {
     try {
-        const formData = await req.formData();
-        const file = formData.get('file') as File;
-        const compressionLevel = formData.get('compressionLevel') as string || 'MEDIUM';
+        // Accept JSON body with fileUrl instead of FormData
+        const body = await req.json();
+        const { fileUrl, fileName, compressionLevel = 'MEDIUM' } = body;
 
-        if (!file) {
-            return NextResponse.json({ error: 'Missing file' }, { status: 400 });
+        if (!fileUrl || !fileName) {
+            return NextResponse.json({ error: 'Missing fileUrl or fileName' }, { status: 400 });
         }
 
         if (!PUBLIC_KEY || !SECRET_KEY) {
@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
         }
 
         console.log("iLovePDF: Starting compression task...");
+        console.log("File URL:", fileUrl.substring(0, 100) + "...");
 
         // STEP 1: Start Task - Get server and task ID
         const startResponse = await fetch('https://api.ilovepdf.com/v1/start/compress', {
@@ -48,13 +49,17 @@ export async function POST(req: NextRequest) {
         const { server, task } = startData;
         console.log("iLovePDF: Task started on server:", server, "Task ID:", task);
 
-        // STEP 2: Upload File
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        // STEP 2: Upload File from URL (fetch from R2)
+        const fileResponse = await fetch(fileUrl);
+        if (!fileResponse.ok) {
+            throw new Error(`Failed to fetch file from storage: ${fileResponse.status}`);
+        }
+        const fileBuffer = await fileResponse.arrayBuffer();
+        const buffer = Buffer.from(fileBuffer);
 
         const uploadFormData = new FormData();
         uploadFormData.append('task', task);
-        uploadFormData.append('file', new Blob([buffer]), file.name);
+        uploadFormData.append('file', new Blob([buffer]), fileName);
 
         const uploadResponse = await fetch(`https://${server}/v1/upload`, {
             method: 'POST',
@@ -84,7 +89,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
                 task: task,
                 tool: 'compress',
-                files: [{ server_filename: serverFilename, filename: file.name }],
+                files: [{ server_filename: serverFilename, filename: fileName }],
                 compression_level: level
             })
         });
@@ -118,7 +123,7 @@ export async function POST(req: NextRequest) {
             status: 200,
             headers: {
                 'Content-Type': 'application/pdf',
-                'Content-Disposition': `attachment; filename="compressed_${file.name}"`,
+                'Content-Disposition': `attachment; filename="compressed_${fileName}"`,
             },
         });
 
@@ -133,8 +138,6 @@ export async function POST(req: NextRequest) {
 
 // Helper function to generate JWT for iLovePDF API
 async function getJWT(publicKey: string, secretKey: string): Promise<string> {
-    // iLovePDF uses a simple JWT with the public key as payload
-    // The token is created by signing with the secret key
     const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
     const payload = Buffer.from(JSON.stringify({
         iss: 'ilovepdf',

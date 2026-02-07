@@ -2,6 +2,7 @@ import { useState } from "react";
 import { PDFDocument, degrees } from "pdf-lib";
 import { readFileAsArrayBuffer, downloadBlob } from "@/lib/pdf-utils";
 import { useAuth } from "@/components/auth/auth-provider";
+import { uploadToR2, deleteFromR2, validatePDFFile } from "@/lib/r2-upload";
 
 export function usePDF() {
     const { user } = useAuth();
@@ -272,20 +273,40 @@ export function usePDF() {
     };
 
     const protectPDF = async (file: File, password: string): Promise<boolean> => {
-        let interval;
+        let r2Key: string | null = null;
         try {
             setIsProcessing(true);
             setError(null);
-            interval = simulateProgress();
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('password', password);
+            // Validate file
+            const validation = validatePDFFile(file);
+            if (!validation.valid) {
+                throw new Error(validation.error);
+            }
 
+            // Check authentication
+            if (!user?.uid) {
+                throw new Error('Please sign in to use this feature');
+            }
+
+            // Stage 1: Upload to R2 (0-40%)
+            setProgress(5);
+            console.log('Uploading to R2...');
+            const { publicUrl, key } = await uploadToR2(file, user.uid, (p) => {
+                setProgress(Math.round(p.progress * 0.4));
+            });
+            r2Key = key;
+            setProgress(45);
+
+            // Stage 2: Call API with file URL (45-100%)
+            console.log('Processing with API...');
             const response = await fetch('/api/encrypt-pdf', {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileUrl: publicUrl, fileName: file.name, password }),
             });
+
+            setProgress(80);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -293,67 +314,75 @@ export function usePDF() {
             }
 
             const blob = await response.blob();
-            const secureName = `secure_${file.name}`;
-
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = secureName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            downloadBlob(blob, `secure_${file.name}`);
 
             setProgress(100);
             return true;
 
         } catch (err: any) {
             console.error("Protection Error:", err);
-            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            setError(errorMessage);
-            // alert(`Encryption Failed: ${errorMessage}`); // Removed alert in favor of toast in UI
+            setError(err.message || 'Unknown error');
             return false;
         } finally {
-            clearInterval(interval);
+            if (r2Key) deleteFromR2(r2Key);
             setIsProcessing(false);
             setTimeout(() => setProgress(0), 1000);
         }
     };
 
     const compressPDF = async (file: File, compressionLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'MEDIUM'): Promise<boolean> => {
-        let interval;
+        let r2Key: string | null = null;
         try {
             setIsProcessing(true);
             setError(null);
-            interval = simulateProgress();
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('compressionLevel', compressionLevel);
+            // Validate file
+            const validation = validatePDFFile(file);
+            if (!validation.valid) {
+                throw new Error(validation.error);
+            }
 
+            // Check authentication
+            if (!user?.uid) {
+                throw new Error('Please sign in to use this feature');
+            }
+
+            // Stage 1: Upload to R2 (0-40%)
+            setProgress(5);
+            console.log('Uploading to R2...');
+            const { publicUrl, key } = await uploadToR2(file, user.uid, (p) => {
+                setProgress(Math.round(p.progress * 0.4));
+            });
+            r2Key = key;
+            setProgress(45);
+
+            // Stage 2: Call API with file URL (45-100%)
+            console.log('Compressing with API...');
             const response = await fetch('/api/compress-pdf', {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileUrl: publicUrl, fileName: file.name, compressionLevel }),
             });
+
+            setProgress(80);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.error || `Server Error: ${response.status}`);
             }
 
-            setProgress(100);
-
             const blob = await response.blob();
             downloadBlob(blob, `compressed_${file.name}`);
+
+            setProgress(100);
             return true;
 
         } catch (err: any) {
-            console.error(err);
-            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            setError(errorMessage);
+            console.error('Compression Error:', err);
+            setError(err.message || 'Unknown error');
             return false;
         } finally {
-            clearInterval(interval);
+            if (r2Key) deleteFromR2(r2Key);
             setIsProcessing(false);
             setTimeout(() => setProgress(0), 1000);
         }
@@ -498,20 +527,40 @@ export function usePDF() {
     };
 
     const unlockPDF = async (file: File, password: string): Promise<boolean> => {
-        let interval;
+        let r2Key: string | null = null;
         try {
             setIsProcessing(true);
             setError(null);
-            interval = simulateProgress();
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('password', password);
+            // Validate file
+            const validation = validatePDFFile(file);
+            if (!validation.valid) {
+                throw new Error(validation.error);
+            }
 
+            // Check authentication
+            if (!user?.uid) {
+                throw new Error('Please sign in to use this feature');
+            }
+
+            // Stage 1: Upload to R2 (0-40%)
+            setProgress(5);
+            console.log('Uploading to R2...');
+            const { publicUrl, key } = await uploadToR2(file, user.uid, (p) => {
+                setProgress(Math.round(p.progress * 0.4));
+            });
+            r2Key = key;
+            setProgress(45);
+
+            // Stage 2: Call API with file URL (45-100%)
+            console.log('Unlocking with API...');
             const response = await fetch('/api/decrypt-pdf', {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileUrl: publicUrl, fileName: file.name, password }),
             });
+
+            setProgress(80);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -519,18 +568,16 @@ export function usePDF() {
             }
 
             const blob = await response.blob();
-            const unlockedName = `unlocked_${file.name}`;
-            downloadBlob(blob, unlockedName);
+            downloadBlob(blob, `unlocked_${file.name}`);
 
             setProgress(100);
             return true;
         } catch (err: any) {
             console.error("Unlock Error:", err);
-            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            setError(errorMessage);
+            setError(err.message || 'Unknown error');
             return false;
         } finally {
-            clearInterval(interval);
+            if (r2Key) deleteFromR2(r2Key);
             setIsProcessing(false);
             setTimeout(() => setProgress(0), 1000);
         }
