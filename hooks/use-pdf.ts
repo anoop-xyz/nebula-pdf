@@ -2,6 +2,7 @@ import { useState } from "react";
 import { PDFDocument, degrees } from "pdf-lib";
 import { readFileAsArrayBuffer, downloadBlob } from "@/lib/pdf-utils";
 import { useAuth } from "@/components/auth/auth-provider";
+import { uploadToCloud, deleteFromCloud, validatePDFFile } from "@/lib/cloud-upload";
 
 export function usePDF() {
     const { user } = useAuth();
@@ -272,20 +273,44 @@ export function usePDF() {
     };
 
     const protectPDF = async (file: File, password: string): Promise<boolean> => {
-        let interval;
+        let uploadedPath: string | null = null;
         try {
             setIsProcessing(true);
             setError(null);
-            interval = simulateProgress();
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('password', password);
+            // Validate file
+            const validation = validatePDFFile(file);
+            if (!validation.valid) {
+                throw new Error(validation.error);
+            }
 
+            // Check if user is authenticated
+            if (!user?.uid) {
+                throw new Error('Please sign in to use this feature');
+            }
+
+            // Stage 1: Upload to Firebase Storage
+            setProgress(5);
+            console.log('Uploading to cloud storage...');
+            const { url: fileUrl, path } = await uploadToCloud(file, user.uid, (p) => {
+                setProgress(Math.round(p.progress * 0.4)); // 0-40% for upload
+            });
+            uploadedPath = path;
+            setProgress(45);
+
+            // Stage 2: Call API with file URL
+            console.log('Processing with API...');
             const response = await fetch('/api/encrypt-pdf', {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fileUrl,
+                    fileName: file.name,
+                    password
+                }),
             });
+
+            setProgress(80);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -294,15 +319,7 @@ export function usePDF() {
 
             const blob = await response.blob();
             const secureName = `secure_${file.name}`;
-
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = secureName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            downloadBlob(blob, secureName);
 
             setProgress(100);
             return true;
@@ -311,49 +328,78 @@ export function usePDF() {
             console.error("Protection Error:", err);
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
             setError(errorMessage);
-            // alert(`Encryption Failed: ${errorMessage}`); // Removed alert in favor of toast in UI
             return false;
         } finally {
-            clearInterval(interval);
+            // Cleanup: Delete temp file from storage
+            if (uploadedPath) {
+                deleteFromCloud(uploadedPath);
+            }
             setIsProcessing(false);
             setTimeout(() => setProgress(0), 1000);
         }
     };
 
     const compressPDF = async (file: File, compressionLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'MEDIUM'): Promise<boolean> => {
-        let interval;
+        let uploadedPath: string | null = null;
         try {
             setIsProcessing(true);
             setError(null);
-            interval = simulateProgress();
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('compressionLevel', compressionLevel);
+            // Validate file
+            const validation = validatePDFFile(file);
+            if (!validation.valid) {
+                throw new Error(validation.error);
+            }
 
+            // Check if user is authenticated
+            if (!user?.uid) {
+                throw new Error('Please sign in to use this feature');
+            }
+
+            // Stage 1: Upload to Firebase Storage
+            setProgress(5);
+            console.log('Uploading to cloud storage...');
+            const { url: fileUrl, path } = await uploadToCloud(file, user.uid, (p) => {
+                setProgress(Math.round(p.progress * 0.4)); // 0-40% for upload
+            });
+            uploadedPath = path;
+            setProgress(45);
+
+            // Stage 2: Call API with file URL
+            console.log('Compressing with API...');
             const response = await fetch('/api/compress-pdf', {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fileUrl,
+                    fileName: file.name,
+                    compressionLevel
+                }),
             });
+
+            setProgress(80);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.error || `Server Error: ${response.status}`);
             }
 
-            setProgress(100);
-
             const blob = await response.blob();
             downloadBlob(blob, `compressed_${file.name}`);
+
+            setProgress(100);
             return true;
 
         } catch (err: any) {
-            console.error(err);
+            console.error('Compression Error:', err);
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
             setError(errorMessage);
             return false;
         } finally {
-            clearInterval(interval);
+            // Cleanup: Delete temp file from storage
+            if (uploadedPath) {
+                deleteFromCloud(uploadedPath);
+            }
             setIsProcessing(false);
             setTimeout(() => setProgress(0), 1000);
         }
@@ -498,20 +544,44 @@ export function usePDF() {
     };
 
     const unlockPDF = async (file: File, password: string): Promise<boolean> => {
-        let interval;
+        let uploadedPath: string | null = null;
         try {
             setIsProcessing(true);
             setError(null);
-            interval = simulateProgress();
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('password', password);
+            // Validate file
+            const validation = validatePDFFile(file);
+            if (!validation.valid) {
+                throw new Error(validation.error);
+            }
 
+            // Check if user is authenticated
+            if (!user?.uid) {
+                throw new Error('Please sign in to use this feature');
+            }
+
+            // Stage 1: Upload to Firebase Storage
+            setProgress(5);
+            console.log('Uploading to cloud storage...');
+            const { url: fileUrl, path } = await uploadToCloud(file, user.uid, (p) => {
+                setProgress(Math.round(p.progress * 0.4)); // 0-40% for upload
+            });
+            uploadedPath = path;
+            setProgress(45);
+
+            // Stage 2: Call API with file URL
+            console.log('Unlocking with API...');
             const response = await fetch('/api/decrypt-pdf', {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fileUrl,
+                    fileName: file.name,
+                    password
+                }),
             });
+
+            setProgress(80);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -519,8 +589,7 @@ export function usePDF() {
             }
 
             const blob = await response.blob();
-            const unlockedName = `unlocked_${file.name}`;
-            downloadBlob(blob, unlockedName);
+            downloadBlob(blob, `unlocked_${file.name}`);
 
             setProgress(100);
             return true;
@@ -530,7 +599,10 @@ export function usePDF() {
             setError(errorMessage);
             return false;
         } finally {
-            clearInterval(interval);
+            // Cleanup: Delete temp file from storage
+            if (uploadedPath) {
+                deleteFromCloud(uploadedPath);
+            }
             setIsProcessing(false);
             setTimeout(() => setProgress(0), 1000);
         }
