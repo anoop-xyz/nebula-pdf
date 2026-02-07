@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const maxDuration = 60; // 60 seconds for large files
-
 const API_KEY = process.env.PDF_CO_API_KEY as string;
 
 if (!API_KEY) {
@@ -10,26 +8,19 @@ if (!API_KEY) {
 
 export async function POST(req: NextRequest) {
     try {
-        // Accept JSON body with fileUrl instead of FormData
-        const body = await req.json();
-        const { fileUrl, fileName, password } = body;
+        const formData = await req.formData();
+        const file = formData.get('file') as File;
+        const password = formData.get('password') as string;
 
-        if (!fileUrl || !fileName || !password) {
-            return NextResponse.json({ error: 'Missing fileUrl, fileName, or password' }, { status: 400 });
+        if (!file || !password) {
+            return NextResponse.json({ error: 'Missing file or password' }, { status: 400 });
         }
 
-        console.log("1. Fetching file from storage...");
-
-        // Fetch file from Firebase Storage URL
-        const fileResponse = await fetch(fileUrl);
-        if (!fileResponse.ok) {
-            throw new Error(`Failed to fetch file from storage: ${fileResponse.status}`);
-        }
-        const fileBuffer = await fileResponse.arrayBuffer();
-        const buffer = Buffer.from(fileBuffer);
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
         const base64Content = buffer.toString('base64');
 
-        console.log("2. Uploading to PDF.co for decryption...");
+        console.log("1. Uploading file to PDF.co for decryption...");
 
         // STEP 1: UPLOAD
         const uploadResponse = await fetch('https://api.pdf.co/v1/file/upload/base64', {
@@ -37,7 +28,7 @@ export async function POST(req: NextRequest) {
             headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 file: base64Content,
-                name: fileName
+                name: file.name
             })
         });
 
@@ -49,20 +40,27 @@ export async function POST(req: NextRequest) {
         if (uploadData.error) throw new Error(uploadData.message);
 
         const tempFileUrl = uploadData.url;
-        console.log("3. File uploaded. Removing security...");
+        console.log("2. File uploaded. Temp URL:", tempFileUrl);
 
         // STEP 2: REMOVE SECURITY
+        // The endpoint usually accepts the password to open the file and then saves it without one.
+        // We use /pdf/security/remove if available, or we might need to check docs.
+        // Common PDF.co pattern is just to process it. Let's try /pdf/security/remove.
+        // If that fails, we can try other endpoints. but this is the logical counterpart to /add.
+
         const processResponse = await fetch('https://api.pdf.co/v1/pdf/security/remove', {
             method: 'POST',
             headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 url: tempFileUrl,
-                password: password,
-                name: `unlocked_${fileName}`
+                password: password, // The password to open the file
+                name: `unlocked_${file.name}`
             })
         });
 
         if (!processResponse.ok) {
+            // Fallback: If 'remove' isn't the exact endpoint, handle error or try alternate.
+            // But usually this exists.
             throw new Error(`Security Removal Failed: ${await processResponse.text()}`);
         }
 
@@ -70,17 +68,17 @@ export async function POST(req: NextRequest) {
         if (processData.error) throw new Error(processData.message);
 
         const finalUrl = processData.url;
-        console.log("4. Security removed. Downloading...");
+        console.log("3. Security removed. Downloading from:", finalUrl);
 
         // STEP 3: DOWNLOAD & RETURN
-        const resultResponse = await fetch(finalUrl);
-        const resultBlob = await resultResponse.blob();
+        const fileResponse = await fetch(finalUrl);
+        const resultBlob = await fileResponse.blob();
 
         return new NextResponse(resultBlob, {
             status: 200,
             headers: {
                 'Content-Type': 'application/pdf',
-                'Content-Disposition': `attachment; filename="unlocked_${fileName}"`,
+                'Content-Disposition': `attachment; filename="unlocked_${file.name}"`,
             },
         });
 
