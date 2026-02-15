@@ -5,10 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Menu, X, Rocket, User, LogOut, Coins, Clock } from "lucide-react";
+import { Menu, X, Rocket, User, LogOut } from "lucide-react";
 import { AuthModal } from "@/components/auth/auth-modal";
-import { CreditPurchaseModal } from "@/components/payment/credit-purchase-modal";
-import { CreditsDisplayModal } from "@/components/payment/credits-display-modal";
 import { useAuth } from "@/components/auth/auth-provider";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -17,8 +15,7 @@ export function Navbar() {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
-    const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
+
     const pathname = usePathname();
     const { user, profile } = useAuth();
     const [showDropdown, setShowDropdown] = useState(false);
@@ -103,14 +100,7 @@ export function Navbar() {
                         <div className="hidden md:flex items-center">
                             {user ? (
                                 <div className="flex items-center">
-                                    {/* Coins / Credits Button */}
-                                    <button
-                                        onClick={() => setIsPurchaseModalOpen(true)}
-                                        className="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 transition-colors mr-3 group"
-                                    >
-                                        <Coins className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
-                                        <span className="text-sm font-medium text-purple-200">Get Credits</span>
-                                    </button>
+
 
                                     {/* Profile Button */}
                                     <div className="relative">
@@ -139,16 +129,7 @@ export function Navbar() {
                                                         <p className="text-xs text-slate-500">Signed in as</p>
                                                         <p className="text-sm font-medium text-white truncate">{user.email}</p>
                                                     </div>
-                                                    <button
-                                                        onClick={() => {
-                                                            setShowDropdown(false);
-                                                            setIsCreditsModalOpen(true);
-                                                        }}
-                                                        className="w-full flex items-center space-x-2 px-4 py-3 text-sm text-purple-400 hover:bg-white/5 transition-colors text-left"
-                                                    >
-                                                        <Coins className="w-4 h-4" />
-                                                        <span>My Credits</span>
-                                                    </button>
+
                                                     {(!profile || !profile.username) && (
                                                         <button
                                                             onClick={() => window.location.reload()}
@@ -244,27 +225,7 @@ export function Navbar() {
                                             </div>
                                         </div>
 
-                                        <button
-                                            onClick={() => {
-                                                setIsMobileMenuOpen(false);
-                                                setIsPurchaseModalOpen(true);
-                                            }}
-                                            className="w-full flex items-center space-x-2 px-2 py-2 text-purple-400 hover:bg-white/5 rounded-lg transition-colors"
-                                        >
-                                            <Coins className="w-4 h-4" />
-                                            <span>Get Credits</span>
-                                        </button>
 
-                                        <button
-                                            onClick={() => {
-                                                setIsMobileMenuOpen(false);
-                                                setIsCreditsModalOpen(true);
-                                            }}
-                                            className="w-full flex items-center space-x-2 px-2 py-2 text-indigo-400 hover:bg-white/5 rounded-lg transition-colors"
-                                        >
-                                            <Clock className="w-4 h-4" />
-                                            <span>My Credits</span>
-                                        </button>
 
                                         <button
                                             onClick={handleSignOut}
@@ -291,25 +252,10 @@ export function Navbar() {
                     )}
                 </AnimatePresence>
 
-                {/* Credits Display Modal */}
-                <CreditsDisplayModal
-                    isOpen={isCreditsModalOpen}
-                    onClose={() => setIsCreditsModalOpen(false)}
-                    onTopUp={() => setIsPurchaseModalOpen(true)}
-                />
-
-
-
                 {/* Auth Modal */}
                 <AuthModal
                     isOpen={isAuthModalOpen}
                     onClose={() => setIsAuthModalOpen(false)}
-                />
-
-                {/* Credit Purchase Modal */}
-                <CreditPurchaseModal
-                    isOpen={isPurchaseModalOpen}
-                    onClose={() => setIsPurchaseModalOpen(false)}
                 />
             </motion.nav>
         </>

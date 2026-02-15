@@ -131,41 +131,17 @@ const tools = [
   },
 ];
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Search } from "lucide-react";
-import { useAuth } from "@/components/auth/auth-provider";
-import { useCredits } from "@/hooks/use-credits";
-import { AuthModal } from "@/components/auth/auth-modal";
-import { CreditPurchaseModal } from "@/components/payment/credit-purchase-modal";
 import { ToolCard } from "@/components/ui/tool-card";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
-  const { user } = useAuth();
-  const { getCredits, getTimeUntilReset } = useCredits();
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
-  // const router = useRouter(); // Removed - not needed in parent
-
-  // Force re-render periodically to update timers
-  const [_, setTick] = useState(0);
-  useEffect(() => {
-    const interval = setInterval(() => setTick(t => t + 1), 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const filteredTools = tools.filter((tool) =>
     tool.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     tool.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const formatTime = (ms: number) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8 md:p-24 relative z-10">
@@ -208,9 +184,6 @@ export default function Home() {
           )}
         </div>
       </div >
-
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
-      <CreditPurchaseModal isOpen={isPurchaseModalOpen} onClose={() => setIsPurchaseModalOpen(false)} />
     </main >
   );
 }

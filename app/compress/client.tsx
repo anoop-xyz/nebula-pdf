@@ -17,19 +17,15 @@ import {
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { AuthModal } from "@/components/auth/auth-modal";
-import { useCredits } from "@/hooks/use-credits";
-import { CreditPurchaseModal } from "@/components/payment/credit-purchase-modal";
 
 export default function CompressPage() {
     const [file, setFile] = useState<File | null>(null);
     const { compressPDF, isProcessing, progress, error } = usePDF();
     const [compressionLevel, setCompressionLevel] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
 
-    // Auth & Credits
+    // Auth
     const { user } = useAuth();
-    const { deductCredit, checkAndResetCredits, getCredits } = useCredits();
     const [showAuthModal, setShowAuthModal] = useState(false);
-    const [showCreditModal, setShowCreditModal] = useState(false);
 
     const handleFilesSelected = (files: File[]) => {
         if (files.length > 0) {
@@ -46,31 +42,11 @@ export default function CompressPage() {
             return;
         }
 
-        // 2. Check Credits (Without Deducting yet)
-        await checkAndResetCredits();
-        const { count } = getCredits();
-
-        // If count is 0, we double check if a reset just happened effectively? 
-        // Actually checkAndResetCredits handles the DB. 
-        // If the context update is slow, 'count' might be 0 but DB has 3.
-        // We can trust checkAndResetCredits for the reset event, but getting the exact count is tricky without awaiting context.
-        // For now, if count is 0, let's allow if checkAndResetCredits returned true (but we don't capture it here easily without changing hook).
-        // Simplest fix: Just attempt to Compress. If they misuse it's fine. 
-        // But for UX, we should block if we are SURE they have 0.
-
-        if (count <= 0) {
-            // Try one more sync check or just Show Modal. 
-            // Ideally we trust 'count' from context.
-            setShowCreditModal(true);
-            return;
-        }
-
-        // 3. Compress
+        // 2. Compress
         const success = await compressPDF(file, compressionLevel);
 
-        // 4. Deduct if successful
+        // 3. Handle result
         if (success) {
-            await deductCredit('compress');
             toast.success("PDF Compressed Successfully!");
         } else {
             // Error handling
@@ -179,10 +155,6 @@ export default function CompressPage() {
             <AuthModal
                 isOpen={showAuthModal}
                 onClose={() => setShowAuthModal(false)}
-            />
-            <CreditPurchaseModal
-                isOpen={showCreditModal}
-                onClose={() => setShowCreditModal(false)}
             />
         </ToolLayout >
     );

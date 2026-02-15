@@ -7,21 +7,15 @@ import { MagneticButton } from "@/components/ui/magnetic-button";
 import { usePDF } from "@/hooks/use-pdf";
 import { Lock, Unlock, KeyRound } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
-import { useCredits } from "@/hooks/use-credits";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AuthModal } from "@/components/auth/auth-modal";
-import { CreditPurchaseModal } from "@/components/payment/credit-purchase-modal";
 
 export default function UnlockPage() {
     const [file, setFile] = useState<File | null>(null);
     const [password, setPassword] = useState("");
     const { unlockPDF, isProcessing, error, progress } = usePDF();
     const { user } = useAuth();
-    const { getCredits, deductCredit } = useCredits();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
-    const router = useRouter();
 
     // Protect Route
     useEffect(() => {
@@ -48,23 +42,9 @@ export default function UnlockPage() {
             return;
         }
 
-        const credits = getCredits("unlock");
-        if (credits.count <= 0) {
-            toast("Daily limit reached", {
-                description: "Buy credits to continue instantly.",
-                action: {
-                    label: "Get Credits",
-                    onClick: () => setIsPurchaseModalOpen(true)
-                }
-            });
-            setIsPurchaseModalOpen(true);
-            return;
-        }
-
         const success = await unlockPDF(file, password);
         if (success) {
-            await deductCredit("unlock");
-            toast.success("Credit used. PDF Unlocked!");
+            toast.success("PDF Unlocked!");
         }
     };
 
@@ -126,7 +106,6 @@ export default function UnlockPage() {
             </div>
 
             <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
-            <CreditPurchaseModal isOpen={isPurchaseModalOpen} onClose={() => setIsPurchaseModalOpen(false)} />
         </ToolLayout>
     );
 }

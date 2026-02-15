@@ -7,7 +7,7 @@ export default function PrivacyPolicy() {
             <p>At {policyConfig.companyName}, we take your privacy seriously.</p>
 
             <h3>1. Information We Collect</h3>
-            <p>We collect basic account information (email) for authentication. We do not store your credit card details; they are handled securely by Razorpay.</p>
+            <p>We collect basic account information (email) for authentication. All tools are completely free to use.</p>
 
             <h3>2. File Security</h3>
             <p>Files uploaded to our tools are processed in memory and automatically deleted after processing. We do not permanently store your documents.</p>
