@@ -1,30 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { ToolLayout } from "@/components/layout/tool-layout";
 import { FileUpload } from "@/components/ui/file-upload";
 import { MagneticButton } from "@/components/ui/magnetic-button";
 import { usePDF } from "@/hooks/use-pdf";
 import { Shield, Lock, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/components/auth/auth-provider";
 import { toast } from "sonner";
-import { AuthModal } from "@/components/auth/auth-modal";
 
 export default function SecurePage() {
     const [file, setFile] = useState<File | null>(null);
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const { protectPDF, isProcessing, progress } = usePDF();
-    const { user } = useAuth();
-    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-    // Protect Route via Effect (Optional but good backup)
-    useEffect(() => {
-        if (!user && !isProcessing) {
-            // Optional: setIsAuthModalOpen(true)
-        }
-    }, [user, isProcessing]);
 
     const passwordsMatch = password.length > 0 && password === confirmPassword;
 
@@ -37,10 +27,6 @@ export default function SecurePage() {
     const handleProtect = async () => {
         if (!file || !passwordsMatch) return;
 
-        if (!user) {
-            setIsAuthModalOpen(true);
-            return;
-        }
 
         const success = await protectPDF(file, password);
         if (success) {
@@ -158,7 +144,7 @@ export default function SecurePage() {
                 </div>
             </div>
 
-            <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+
         </ToolLayout>
     );
 }

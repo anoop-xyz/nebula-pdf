@@ -1,31 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { ToolLayout } from "@/components/layout/tool-layout";
 import { FileUpload } from "@/components/ui/file-upload";
 import { MagneticButton } from "@/components/ui/magnetic-button";
 import { usePDF } from "@/hooks/use-pdf";
 import { Lock, Unlock, KeyRound } from "lucide-react";
-import { useAuth } from "@/components/auth/auth-provider";
 import { toast } from "sonner";
-import { AuthModal } from "@/components/auth/auth-modal";
 
 export default function UnlockPage() {
     const [file, setFile] = useState<File | null>(null);
     const [password, setPassword] = useState("");
     const { unlockPDF, isProcessing, error, progress } = usePDF();
-    const { user } = useAuth();
-    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-    // Protect Route
-    useEffect(() => {
-        // If loading profile... maybe wait? But simple check:
-        // Logic handled by wrapping action mainly, but good to kick guest out or show login
-        // But user preferred redirect to login if guest
-        if (!user && !isProcessing) { // Simple check, might need isLoading from auth
-            // Optional: setIsAuthModalOpen(true) or router.push('/')
-        }
-    }, [user]);
 
     const handleFilesSelected = (files: File[]) => {
         if (files.length > 0) {
@@ -37,10 +24,6 @@ export default function UnlockPage() {
     const handleUnlock = async () => {
         if (!file || !password) return;
 
-        if (!user) {
-            setIsAuthModalOpen(true);
-            return;
-        }
 
         const success = await unlockPDF(file, password);
         if (success) {
@@ -105,7 +88,7 @@ export default function UnlockPage() {
                 )}
             </div>
 
-            <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+
         </ToolLayout>
     );
 }

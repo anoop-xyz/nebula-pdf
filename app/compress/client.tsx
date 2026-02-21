@@ -15,17 +15,14 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
-import { useAuth } from "@/components/auth/auth-provider";
-import { AuthModal } from "@/components/auth/auth-modal";
+
 
 export default function CompressPage() {
     const [file, setFile] = useState<File | null>(null);
     const { compressPDF, isProcessing, progress, error } = usePDF();
     const [compressionLevel, setCompressionLevel] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
 
-    // Auth
-    const { user } = useAuth();
-    const [showAuthModal, setShowAuthModal] = useState(false);
+
 
     const handleFilesSelected = (files: File[]) => {
         if (files.length > 0) {
@@ -36,13 +33,7 @@ export default function CompressPage() {
     const handleCompress = async () => {
         if (!file) return;
 
-        // 1. Check Auth
-        if (!user) {
-            setShowAuthModal(true);
-            return;
-        }
-
-        // 2. Compress
+        // Compress
         const success = await compressPDF(file, compressionLevel);
 
         // 3. Handle result
@@ -152,10 +143,6 @@ export default function CompressPage() {
             </div>
 
 
-            <AuthModal
-                isOpen={showAuthModal}
-                onClose={() => setShowAuthModal(false)}
-            />
         </ToolLayout >
     );
 }
