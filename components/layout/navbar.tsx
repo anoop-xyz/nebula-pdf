@@ -47,7 +47,7 @@ export function Navbar() {
                 initial={{ y: -100 }}
                 animate={{ y: 0 }}
                 className={cn(
-                    "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-transparent",
+                    "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-transparent pt-[env(safe-area-inset-top,0px)]",
                     isScrolled ? "bg-[#030712]/60 backdrop-blur-xl border-white/10" : "bg-transparent"
                 )}
             >

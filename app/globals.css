@@ -113,3 +113,10 @@ body {
   /* Ensure vertical scroll is allowed but hidden */
   overflow-y: auto;
 }
+
+/* Safe area padding for mobile status bar */
+@supports (padding-top: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+  }
+}
