@@ -193,17 +193,17 @@ export default function OrganizePage() {
                                         as="div"
                                     >
                                         <div className={cn(
-                                            "w-full min-h-[5rem] md:min-h-[8rem] rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm",
-                                            "flex items-center gap-3 md:gap-6 p-3 md:p-4 relative transition-all duration-300",
+                                            "w-full rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm",
+                                            "flex items-center gap-2 sm:gap-4 md:gap-6 p-3 md:p-4 relative transition-all duration-300",
                                             "group-hover:border-primary/50 group-hover:shadow-[0_0_20px_rgba(56,189,248,0.1)]"
                                         )}>
                                             {/* Drag Handle */}
-                                            <div className="text-slate-600 group-hover:text-slate-400 transition-colors">
-                                                <GripVertical className="w-6 h-6" />
+                                            <div className="text-slate-600 group-hover:text-slate-400 transition-colors flex-shrink-0">
+                                                <GripVertical className="w-5 h-5 md:w-6 md:h-6" />
                                             </div>
 
-                                            {/* Thumbnail */}
-                                            <div className="h-full aspect-[3/4] bg-slate-900/50 rounded-lg overflow-hidden border border-slate-700/30 flex items-center justify-center">
+                                            {/* Thumbnail - hidden on mobile */}
+                                            <div className="hidden sm:flex h-20 md:h-24 aspect-[3/4] bg-slate-900/50 rounded-lg overflow-hidden border border-slate-700/30 items-center justify-center flex-shrink-0">
                                                 {page.thumbnail ? (
                                                     <img
                                                         src={page.thumbnail}
@@ -222,27 +222,25 @@ export default function OrganizePage() {
                                             </div>
 
                                             {/* Details */}
-                                            <div className="flex-1 flex flex-col justify-center min-w-0">
-                                                <div className="flex items-center gap-2 md:gap-3 mb-1">
-                                                    <span className="text-slate-200 font-medium text-sm md:text-lg">
-                                                        Page {index + 1}
-                                                    </span>
-                                                    <span className="text-slate-500 text-xs md:text-sm">
-                                                        (Orig: {page.displayNumber})
-                                                    </span>
-                                                </div>
-                                                <div className="text-slate-500 text-xs hidden sm:block">
-                                                    Drag to reorder • Click rotate to adjust orientation
+                                            <div className="flex-1 min-w-0">
+                                                <span className="text-slate-200 font-medium text-sm md:text-lg">
+                                                    Page {index + 1}
+                                                </span>
+                                                <span className="text-slate-500 text-xs md:text-sm ml-2">
+                                                    (#{page.displayNumber})
+                                                </span>
+                                                <div className="text-slate-500 text-xs hidden md:block mt-1">
+                                                    Drag to reorder • Click rotate to adjust
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleRotate(page.id);
                                                     }}
-                                                    className="p-2 md:p-3 bg-slate-800 rounded-full text-slate-400 hover:bg-primary hover:text-white transition-all hover:scale-110 active:scale-95 border border-slate-700 hover:border-primary flex-shrink-0"
+                                                    className="p-2 md:p-3 bg-slate-800 rounded-full text-slate-400 hover:bg-primary hover:text-white transition-all active:scale-95 border border-slate-700 hover:border-primary"
                                                     title="Rotate 90°"
                                                 >
                                                     <RotateCw className="w-4 h-4 md:w-5 md:h-5" />
@@ -252,7 +250,7 @@ export default function OrganizePage() {
                                                         e.stopPropagation();
                                                         handleDeleteClick(page.id);
                                                     }}
-                                                    className="p-2 md:p-3 bg-slate-800 rounded-full text-slate-400 hover:bg-red-500 hover:text-white transition-all hover:scale-110 active:scale-95 border border-slate-700 hover:border-red-500 group/delete flex-shrink-0"
+                                                    className="p-2 md:p-3 bg-slate-800 rounded-full text-slate-400 hover:bg-red-500 hover:text-white transition-all active:scale-95 border border-slate-700 hover:border-red-500 group/delete"
                                                     title="Delete Page"
                                                 >
                                                     <X className="w-4 h-4 md:w-5 md:h-5 group-hover/delete:rotate-90 transition-transform" />
