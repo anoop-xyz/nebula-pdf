@@ -106,6 +106,18 @@ export default function RootLayout({
             })
           }}
         />
+        {/* Google Analytics GA4 */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-X1WYEBY6HY"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-X1WYEBY6HY');
+            `,
+          }}
+        />
       </head>
       <body className={`${inter.variable} font-sans antialiased text-foreground selection:bg-primary/20 selection:text-primary`}>
         <AuthProvider>
