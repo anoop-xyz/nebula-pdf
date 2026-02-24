@@ -298,7 +298,7 @@ export default function PdfViewer() {
     }
 
     return (
-        <div ref={containerRef} className="fixed inset-0 z-[99999] flex flex-col bg-slate-950 text-slate-200 overflow-hidden">
+        <div ref={containerRef} className="fixed inset-0 z-[99999] flex flex-col bg-slate-950 text-slate-200 overflow-hidden pt-[env(safe-area-inset-top,0px)]">
 
             {/* --- TOP TOOLBAR (Adaptive) --- */}
             <div className="h-16 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-2 md:px-4 z-20 shrink-0">
