@@ -148,6 +148,27 @@ export default function PdfViewer() {
         onDrop, accept: { "application/pdf": [".pdf"] }, multiple: false
     });
 
+    // Android App Bridge: expose a global function for PdfIntentActivity to inject PDFs
+    useEffect(() => {
+        (window as any).__nebulaPDF_loadFile = (base64: string, filename: string) => {
+            try {
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                const blob = new Blob([bytes], { type: "application/pdf" });
+                const file = new File([blob], filename || "document.pdf", { type: "application/pdf" });
+                setFile(file);
+                loadPDF(file);
+                return "success";
+            } catch (e: any) {
+                return "error: " + e.message;
+            }
+        };
+        return () => { delete (window as any).__nebulaPDF_loadFile; };
+    }, []);
+
     const loadPDF = async (file: File) => {
         setIsLoading(true);
         try {
