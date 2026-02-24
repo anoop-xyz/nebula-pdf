@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import { FileStack, Minimize2, Image as ImageIcon, RotateCw, Shield, Wand2, LayoutGrid, Droplets, Scissors, PenLine, FileText, Lock, Hash, FileArchive, Eye } from "lucide-react";
+import { FileStack, Minimize2, Image as ImageIcon, RotateCw, Shield, Wand2, LayoutGrid, Droplets, Scissors, PenLine, FileText, Lock, Hash, FileArchive, Eye, Download, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tools = [
@@ -131,12 +131,19 @@ const tools = [
   },
 ];
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { ToolCard } from "@/components/ui/tool-card";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAndroid, setIsAndroid] = useState(false);
+  const [showBanner, setShowBanner] = useState(true);
+
+  useEffect(() => {
+    const ua = navigator.userAgent.toLowerCase();
+    setIsAndroid(/android/i.test(ua));
+  }, []);
 
   const filteredTools = tools.filter((tool) =>
     tool.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -156,6 +163,46 @@ export default function Home() {
             Private, fast, and beautiful.
           </p>
         </div>
+
+        {/* Android App Download Banner */}
+        {showBanner && (
+          <div className="relative max-w-lg mx-auto w-full">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 rounded-2xl blur-xl" />
+            <div className="relative bg-slate-900/80 border border-emerald-500/20 backdrop-blur-sm rounded-2xl p-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center">
+                  <Smartphone className="w-5 h-5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-white">
+                    {isAndroid ? "Get the Nebula PDF App" : "Available on Android"}
+                  </p>
+                  <p className="text-xs text-slate-400 truncate">Open PDFs directly from your phone</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <a
+                  href="/NebulaPDF-v1.0.apk"
+                  download="NebulaPDF-v1.0.apk"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-sm font-semibold hover:from-emerald-400 hover:to-cyan-400 transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-105"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">Download</span>
+                </a>
+                <button
+                  onClick={() => setShowBanner(false)}
+                  className="text-slate-500 hover:text-slate-300 transition-colors p-1"
+                  aria-label="Dismiss"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Search Bar */}
         <div className="relative max-w-md mx-auto w-full group">

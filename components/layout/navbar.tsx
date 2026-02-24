@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Menu, X, Rocket, User, LogOut } from "lucide-react";
+import { Menu, X, Rocket, User, LogOut, Download } from "lucide-react";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { useAuth } from "@/components/auth/auth-provider";
 import { signOut } from "firebase/auth";
@@ -209,6 +209,17 @@ export function Navbar() {
                                         </Link>
                                     )
                                 ))}
+
+                                {/* Android App Download */}
+                                <a
+                                    href="/NebulaPDF-v1.0.apk"
+                                    download="NebulaPDF-v1.0.apk"
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="flex items-center gap-2 text-base font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    Download Android App
+                                </a>
 
                                 {/* Mobile Auth */}
                                 {user ? (
