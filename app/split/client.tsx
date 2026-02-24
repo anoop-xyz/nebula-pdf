@@ -107,7 +107,7 @@ export default function SplitPage() {
                 </div>
             ) : (
                 <div className="flex flex-col h-full">
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={() => setFile(null)}
@@ -128,7 +128,7 @@ export default function SplitPage() {
                         <MagneticButton
                             onClick={handleSplit}
                             disabled={selectedCount === 0 || isProcessing}
-                            className="w-auto"
+                            className="w-full sm:w-auto"
                         >
                             {isProcessing ? "Extracting..." : "Extract Selected Pages"}
                         </MagneticButton>

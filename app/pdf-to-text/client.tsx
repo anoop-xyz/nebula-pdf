@@ -53,7 +53,7 @@ export default function PdfToTextPage() {
                     </div>
                 ) : (
                     <div className="flex-1 flex flex-col h-full overflow-hidden">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                             <div className="flex items-center gap-4">
                                 <button
                                     onClick={() => {

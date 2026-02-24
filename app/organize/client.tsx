@@ -151,7 +151,7 @@ export default function OrganizePage() {
                 </div>
             ) : (
                 <div className="flex flex-col h-full">
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={() => setFile(null)}
@@ -193,8 +193,8 @@ export default function OrganizePage() {
                                         as="div"
                                     >
                                         <div className={cn(
-                                            "w-full h-32 rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm",
-                                            "flex items-center gap-6 p-4 relative overflow-hidden transition-all duration-300",
+                                            "w-full min-h-[5rem] md:min-h-[8rem] rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm",
+                                            "flex items-center gap-3 md:gap-6 p-3 md:p-4 relative transition-all duration-300",
                                             "group-hover:border-primary/50 group-hover:shadow-[0_0_20px_rgba(56,189,248,0.1)]"
                                         )}>
                                             {/* Drag Handle */}
@@ -222,16 +222,16 @@ export default function OrganizePage() {
                                             </div>
 
                                             {/* Details */}
-                                            <div className="flex-1 flex flex-col justify-center">
-                                                <div className="flex items-center gap-3 mb-1">
-                                                    <span className="text-slate-200 font-medium text-lg">
+                                            <div className="flex-1 flex flex-col justify-center min-w-0">
+                                                <div className="flex items-center gap-2 md:gap-3 mb-1">
+                                                    <span className="text-slate-200 font-medium text-sm md:text-lg">
                                                         Page {index + 1}
                                                     </span>
-                                                    <span className="text-slate-500 text-sm">
-                                                        (Original: {page.displayNumber})
+                                                    <span className="text-slate-500 text-xs md:text-sm">
+                                                        (Orig: {page.displayNumber})
                                                     </span>
                                                 </div>
-                                                <div className="text-slate-500 text-xs">
+                                                <div className="text-slate-500 text-xs hidden sm:block">
                                                     Drag to reorder • Click rotate to adjust orientation
                                                 </div>
                                             </div>
@@ -242,20 +242,20 @@ export default function OrganizePage() {
                                                         e.stopPropagation();
                                                         handleRotate(page.id);
                                                     }}
-                                                    className="p-3 bg-slate-800 rounded-full text-slate-400 hover:bg-primary hover:text-white transition-all hover:scale-110 active:scale-95 border border-slate-700 hover:border-primary"
+                                                    className="p-2 md:p-3 bg-slate-800 rounded-full text-slate-400 hover:bg-primary hover:text-white transition-all hover:scale-110 active:scale-95 border border-slate-700 hover:border-primary flex-shrink-0"
                                                     title="Rotate 90°"
                                                 >
-                                                    <RotateCw className="w-5 h-5" />
+                                                    <RotateCw className="w-4 h-4 md:w-5 md:h-5" />
                                                 </button>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleDeleteClick(page.id);
                                                     }}
-                                                    className="p-3 bg-slate-800 rounded-full text-slate-400 hover:bg-red-500 hover:text-white transition-all hover:scale-110 active:scale-95 border border-slate-700 hover:border-red-500 group/delete"
+                                                    className="p-2 md:p-3 bg-slate-800 rounded-full text-slate-400 hover:bg-red-500 hover:text-white transition-all hover:scale-110 active:scale-95 border border-slate-700 hover:border-red-500 group/delete flex-shrink-0"
                                                     title="Delete Page"
                                                 >
-                                                    <X className="w-5 h-5 group-hover/delete:rotate-90 transition-transform" />
+                                                    <X className="w-4 h-4 md:w-5 md:h-5 group-hover/delete:rotate-90 transition-transform" />
                                                 </button>
                                             </div>
                                         </div>

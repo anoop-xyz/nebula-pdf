@@ -260,7 +260,7 @@ export default function SignPage() {
             ) : (
                 <div className="flex flex-col items-center w-full max-w-5xl mx-auto space-y-6">
                     {/* Controls */}
-                    <div className="w-full flex items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <div className="w-full flex flex-wrap items-center justify-between gap-3 bg-slate-800/50 p-3 md:p-4 rounded-xl border border-slate-700">
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={() => setPageNum(p => Math.max(1, p - 1))}

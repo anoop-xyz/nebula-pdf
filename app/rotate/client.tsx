@@ -106,7 +106,7 @@ export default function RotatePage() {
                 </div>
             ) : (
                 <div className="flex flex-col h-full">
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={() => setFile(null)}
@@ -120,13 +120,13 @@ export default function RotatePage() {
                                     onClick={() => rotateAll("left")}
                                     className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 transition-colors flex items-center gap-2 text-sm"
                                 >
-                                    <RotateCcw className="w-4 h-4" /> Rotate All Left
+                                    <RotateCcw className="w-4 h-4" /> <span className="hidden sm:inline">Rotate All Left</span>
                                 </button>
                                 <button
                                     onClick={() => rotateAll("right")}
                                     className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 transition-colors flex items-center gap-2 text-sm"
                                 >
-                                    <RotateCw className="w-4 h-4" /> Rotate All Right
+                                    <RotateCw className="w-4 h-4" /> <span className="hidden sm:inline">Rotate All Right</span>
                                 </button>
                             </div>
                         </div>
@@ -134,7 +134,7 @@ export default function RotatePage() {
                         <MagneticButton
                             onClick={handleSave}
                             disabled={isProcessing}
-                            className="w-auto"
+                            className="w-full sm:w-auto"
                         >
                             {isProcessing ? "Saving..." : "Save PDF"}
                         </MagneticButton>

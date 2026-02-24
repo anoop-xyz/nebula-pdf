@@ -99,7 +99,7 @@ export default function WatermarkPage() {
                     )}
                 </div>
 
-                <div className="flex flex-col items-center justify-center border-l border-slate-800 pl-8 min-h-[300px]">
+                <div className="flex flex-col items-center justify-center border-t lg:border-t-0 lg:border-l border-slate-800 pt-8 lg:pt-0 lg:pl-8 min-h-[300px]">
                     <div className="text-center space-y-6">
                         <div className="w-40 h-56 bg-white rounded-lg border-2 border-dashed border-slate-700 flex items-center justify-center mx-auto relative overflow-hidden shadow-xl">
                             {/* Preview */}
