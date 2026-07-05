@@ -1,0 +1,28 @@
+{
+  "name": "Nebula PDF | Next-Gen Online PDF Tools",
+  "short_name": "Nebula PDF",
+  "description": "Free, secure, and fast online PDF tools. Merge, compress, split, convert, sign, and edit PDFs directly in your browser with zero data uploads.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "lang": "en-US",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities", "business"],
+  "icons": [
+    {
+      "src": "/nebula-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/nebula-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

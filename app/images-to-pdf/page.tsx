@@ -1,14 +1,24 @@
 import { Metadata } from "next";
 import ImagesToPdfPage from "./client";
+import { ToolStructuredData } from "@/components/seo/structured-data";
 
 export const metadata: Metadata = {
-    title: "Images to PDF | Convert JPG, PNG to PDF",
-    description: "Convert your images (JPG, PNG) to a single PDF document. Drag and drop, reorder, and convert instantly in your browser.",
-    alternates: {
-        canonical: '/images-to-pdf'
-    }
+  title: "Images to PDF | Convert JPG, PNG to PDF",
+  description: "Convert your images (JPG, PNG) to a single PDF document. Drag and drop, reorder, and convert instantly in your browser.",
+  alternates: {
+    canonical: '/images-to-pdf'
+  }
 };
 
 export default function Page() {
-    return <ImagesToPdfPage />;
+  return (
+    <>
+      <ToolStructuredData
+        name="Images to PDF"
+        description="Convert your images (JPG, PNG) to a single PDF document. Drag and drop, reorder, and convert instantly in your browser."
+        path="/images-to-pdf"
+      />
+      <ImagesToPdfPage />
+    </>
+  );
 }
